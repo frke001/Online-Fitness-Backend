@@ -34,7 +34,7 @@ public class ClientEntity {
     private String city;
 
     @Basic
-    @Column(name = "mail", nullable = false, length = 50)
+    @Column(name = "mail", nullable = false, length = 50, unique = true)
     private String mail;
 
     @Basic
@@ -44,4 +44,8 @@ public class ClientEntity {
     @Enumerated(EnumType.ORDINAL)
     @Column
     protected Role role;
+
+    @Basic
+    @Column(name = "deleted", nullable = false)
+    protected Boolean deleted;
 }

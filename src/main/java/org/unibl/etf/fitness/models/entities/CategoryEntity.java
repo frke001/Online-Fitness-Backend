@@ -19,6 +19,10 @@ public class CategoryEntity {
     @Column(name = "name", nullable = false, length = 50)
     protected String name;
 
+    @Basic
+    @Column(name = "deleted", nullable = false)
+    protected Boolean deleted;
+
     @OneToMany(mappedBy = "category")
     List<CategoryAttributeEntity> attributes;
 

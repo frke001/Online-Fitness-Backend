@@ -30,6 +30,10 @@ public class AdvisorEntity{
     protected String password;
 
     @Basic
-    @Column(name = "mail", nullable = false, length = 50)
+    @Column(name = "mail", nullable = false, length = 50, unique = true)
     private String mail;
+
+    @Basic
+    @Column(name = "deleted", nullable = false)
+    protected Boolean deleted;
 }

@@ -17,6 +17,11 @@ public class CategoryAttributeEntity {
     @Column(name = "name", nullable = false, length = 50)
     protected String name;
 
+    @Basic
+    @Column(name = "deleted", nullable = false)
+    protected Boolean deleted;
+
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", referencedColumnName = "id") // spajamo kolonu category_id u ovoj klasi i id u drugoj tabeli
     private CategoryEntity category;
