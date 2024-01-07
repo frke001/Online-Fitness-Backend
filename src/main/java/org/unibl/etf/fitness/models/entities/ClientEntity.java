@@ -19,15 +19,15 @@ public class ClientEntity {
 
     @Basic
     @Column(name = "surname", nullable = false, length = 50)
-    protected String surname;
+    private String surname;
 
     @Basic
     @Column(name = "username", nullable = false, length = 50, unique = true)
-    protected String username;
+    private String username;
 
     @Basic
     @Column(name = "password", nullable = false, length = 512)
-    protected String password;
+    private String password;
 
     @Basic
     @Column(name = "city", nullable = false, length = 50)
@@ -43,9 +43,13 @@ public class ClientEntity {
 
     @Enumerated(EnumType.ORDINAL)
     @Column
-    protected Role role;
+    private Role role;
 
     @Basic
     @Column(name = "deleted", nullable = false)
-    protected Boolean deleted;
+    private Boolean deleted;
+
+    @OneToOne
+    @JoinColumn(name="phofile_image_id",referencedColumnName = "id")
+    private ImageEntity profileImage;
 }

@@ -11,15 +11,15 @@ public class CategoryAttributeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column(name = "id", nullable = false)
-    protected Long id;
+    private Long id;
 
     @Basic
     @Column(name = "name", nullable = false, length = 50)
-    protected String name;
+    private String name;
 
     @Basic
     @Column(name = "deleted", nullable = false)
-    protected Boolean deleted;
+    private Boolean deleted;
 
 
     @ManyToOne(fetch = FetchType.LAZY)

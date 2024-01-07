@@ -23,6 +23,6 @@ public class JwtUserDetailsServiceImpl implements JwtUserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return modelMapper.map(clientRepository.findByUsernameAndAccountStatus(username,true).orElseThrow(UnauthorizedException::new), JwtUserDTO.class);
+        return modelMapper.map(clientRepository.findByUsername(username).orElseThrow(UnauthorizedException::new), JwtUserDTO.class);
     }
 }
