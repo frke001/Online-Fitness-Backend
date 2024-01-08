@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotApprovedException.class)
     public ResponseEntity<Object> handleNotApprovedException(NotApprovedException e)
     {
-        return new ResponseEntity<>(e.getMessage(),HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(e.getMessage(),HttpStatus.NOT_ACCEPTABLE);
     }
 
     @ExceptionHandler(AccountBlockedException.class)

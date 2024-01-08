@@ -59,9 +59,11 @@ public class AuthServiceImpl implements AuthService {
         entity.setAccountStatus(false);
         entity.setDeleted(false);
         entity.setRole(Role.REGISTERED_CLIENT);
-        ImageEntity imageEntity = new ImageEntity();
-        imageEntity.setId(request.getProfileImageId());
-        entity.setProfileImage(imageEntity);
+        if(request.getProfileImageId() != null) {
+            ImageEntity imageEntity = new ImageEntity();
+            imageEntity.setId(request.getProfileImageId());
+            entity.setProfileImage(imageEntity);
+        }
         entity = clientRepository.saveAndFlush(entity);
         entityManager.refresh(entity);
         ValidationTokenEntity validationToken = validationTokenService.generateTokenForUser(entity);
@@ -81,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void resendActivation(EmailDTO emailDTO) {
-       ClientEntity clientEntity = clientRepository.findByMail(emailDTO.getMail()).get();
+       ClientEntity clientEntity = clientRepository.findByUsername(emailDTO.getUsername()).get();
        ValidationTokenEntity validationTokenEntity = validationTokenRepository.findByClientId(clientEntity.getId()).get();
        emailService.sendVerificationEmail(validationTokenEntity.getToken(), clientEntity.getMail());
     }

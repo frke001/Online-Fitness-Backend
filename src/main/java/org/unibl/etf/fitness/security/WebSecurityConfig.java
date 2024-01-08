@@ -46,8 +46,8 @@ public class WebSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 //.csrf(csrf -> csrf.csrfTokenRequestHandler(new XorCsrfTokenRequestAttributeHandler()))
                 .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .anyRequest().permitAll()
+                                .requestMatchers("/**").permitAll()
+                       /* .requestMatchers("/api/v1/image").permitAll()*/
                 )
                 .sessionManagement(manager -> manager.sessionCreationPolicy(STATELESS))
                 .authenticationProvider(daoAuthenticationProvider())

@@ -16,7 +16,8 @@ import java.nio.file.Path;
 @Service
 public class EmailServiceImpl implements EmailService {
 
-    private final JavaMailSender mailSender;
+    @Autowired
+    private JavaMailSender mailSender;
     @Value("${spring.mail.username}")
     private String fromMail;
 

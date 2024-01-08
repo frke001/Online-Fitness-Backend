@@ -6,5 +6,5 @@ import lombok.Data;
 @Data
 public class EmailDTO {
     @NotBlank
-    private String mail;
+    private String username;
 }

@@ -54,6 +54,7 @@ public class JwtServiceImpl implements JwtService {
                 .setId(userDetails.getId().toString())
                 .setSubject(userDetails.getUsername())
                 .claim("role", userDetails.getRole().toString())
+                .claim("profileImageId", userDetails.getProfileImageId().toString())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 24))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS512)
