@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.unibl.etf.fitness.models.enums.Role;
 
+import java.util.List;
+
 @Data
 @Entity
 @Table(name = "client")
@@ -11,11 +13,11 @@ public class ClientEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     @Column(name = "id", nullable = false)
-    protected Long id;
+    private Long id;
 
     @Basic
     @Column(name = "name", nullable = false, length = 50)
-    protected String name;
+    private String name;
 
     @Basic
     @Column(name = "surname", nullable = false, length = 50)
@@ -52,4 +54,7 @@ public class ClientEntity {
     @OneToOne
     @JoinColumn(name="phofile_image_id",referencedColumnName = "id")
     private ImageEntity profileImage;
+
+    @OneToMany(mappedBy = "client")
+    private List<FitnessProgramEntity> fitnessPrograms;
 }

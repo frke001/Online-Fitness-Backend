@@ -26,4 +26,7 @@ public class CategoryEntity {
     @OneToMany(mappedBy = "category")
     List<CategoryAttributeEntity> attributes;
 
+    @OneToMany(mappedBy = "category")
+    List<FitnessProgramEntity> fitnessPrograms;
+
 }

@@ -4,6 +4,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.unibl.etf.fitness.models.dto.RequestFitnessProgramDTO;
+import org.unibl.etf.fitness.models.entities.FitnessProgramEntity;
 
 @SpringBootApplication
 public class FitnessApplication {

@@ -1,10 +1,7 @@
 package org.unibl.etf.fitness.services;
 
 import org.springframework.security.core.Authentication;
-import org.unibl.etf.fitness.models.dto.ChangePasswordDTO;
-import org.unibl.etf.fitness.models.dto.UpdateClientRequestDTO;
-import org.unibl.etf.fitness.models.dto.UpdateClientResponseDTO;
-import org.unibl.etf.fitness.models.dto.UpdatePictureDTO;
+import org.unibl.etf.fitness.models.dto.*;
 
 public interface ClientService {
 
@@ -15,4 +12,6 @@ public interface ClientService {
     Long getImageId(Long id, Authentication auth);
 
     boolean changePassword(Long id, ChangePasswordDTO request, Authentication auth);
+
+    ResponseFitnessProgramDTO insertFitnessProgram(Long id, RequestFitnessProgramDTO request, Authentication auth);
 }

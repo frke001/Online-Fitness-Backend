@@ -2,10 +2,7 @@ package org.unibl.etf.fitness.controllers;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.unibl.etf.fitness.models.dto.ChangePasswordDTO;
-import org.unibl.etf.fitness.models.dto.UpdateClientRequestDTO;
-import org.unibl.etf.fitness.models.dto.UpdateClientResponseDTO;
-import org.unibl.etf.fitness.models.dto.UpdatePictureDTO;
+import org.unibl.etf.fitness.models.dto.*;
 import org.unibl.etf.fitness.services.ClientService;
 
 @RestController
@@ -37,5 +34,10 @@ public class ClientController {
     @PutMapping("/{id}/change-password")
     public boolean changePassword(@PathVariable Long id, @RequestBody ChangePasswordDTO request, Authentication auth){
         return clientService.changePassword(id,request,auth);
+    }
+
+    @PostMapping("/{id}/fitness-programs")
+    public ResponseFitnessProgramDTO insertFitnessProgramForClient(@PathVariable Long id, @RequestBody RequestFitnessProgramDTO request, Authentication auth){
+        return clientService.insertFitnessProgram(id,request,auth);
     }
 }

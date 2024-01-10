@@ -3,6 +3,8 @@ package org.unibl.etf.fitness.models.entities;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @Entity
 @Table(name = "category_attribute")
@@ -25,4 +27,8 @@ public class CategoryAttributeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", referencedColumnName = "id") // spajamo kolonu category_id u ovoj klasi i id u drugoj tabeli
     private CategoryEntity category;
+
+    @OneToMany(mappedBy = "categoryAttribute")
+    private List<FitnessProgramCategoryAttributeEntity> fitnessProgramValues;
+
 }
