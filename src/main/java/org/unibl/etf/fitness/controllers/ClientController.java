@@ -5,6 +5,8 @@ import org.springframework.web.bind.annotation.*;
 import org.unibl.etf.fitness.models.dto.*;
 import org.unibl.etf.fitness.services.ClientService;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("api/v1/clients")
 public class ClientController {
@@ -39,5 +41,10 @@ public class ClientController {
     @PostMapping("/{id}/fitness-programs")
     public ResponseFitnessProgramDTO insertFitnessProgramForClient(@PathVariable Long id, @RequestBody RequestFitnessProgramDTO request, Authentication auth){
         return clientService.insertFitnessProgram(id,request,auth);
+    }
+
+    @GetMapping("/{id}/fitness-programs")
+    public List<CardFitnessProgramDTO> insertFitnessProgramForClient(@PathVariable Long id, Authentication auth){
+        return clientService.getAllProgramsForClient(id,auth);
     }
 }

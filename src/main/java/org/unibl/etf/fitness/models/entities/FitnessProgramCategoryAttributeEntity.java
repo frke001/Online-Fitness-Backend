@@ -14,7 +14,7 @@ public class FitnessProgramCategoryAttributeEntity {
     private Long id;
 
     @Basic
-    @Column(name = "value",length = 50,nullable = false)
+    @Column(name = "value",nullable = false)
     private String value;
 
     @ManyToOne

@@ -16,6 +16,6 @@ public class CategoryAttributeValueDTO {
     private Long id;
 
     @NotBlank
-    @Size(max = 50)
+    @Size(max = 255)
     private String value;
 }

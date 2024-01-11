@@ -20,7 +20,7 @@ public class FitnessProgramEntity {
     protected Long id;
 
     @Basic
-    @Column(name = "name", length = 50, nullable = false)
+    @Column(name = "name", length = 100, nullable = false)
     private String name;
 
     @Basic
@@ -40,6 +40,10 @@ public class FitnessProgramEntity {
     private Location location;
 
     @Basic
+    @Column(name = "concrete_location", length = 100)
+    private String concreteLocation;
+
+    @Basic
     @Column(name = "instructor_name", length = 50, nullable = false)
     private String instructorName;
 
@@ -52,8 +56,16 @@ public class FitnessProgramEntity {
     private String contact;
 
     @Basic
+    @Column(name = "link")
+    private String link;
+
+    @Basic
     @Column(name = "days", nullable = false)
     private Long days;
+
+    @Basic
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted;
 
     @OneToOne
     @JoinColumn(name="image_id",referencedColumnName = "id")

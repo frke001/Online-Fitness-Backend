@@ -1,8 +1,5 @@
 package org.unibl.etf.fitness.models.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,7 +10,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ResponseFitnessProgramDTO {
+public class FitnessProgramDTO extends ResponseFitnessProgramDTO{
 
     private Long id;
     private String name;
@@ -27,7 +24,7 @@ public class ResponseFitnessProgramDTO {
     private String contact;
     private Long days;
     private Long imageId;
-    private Long categoryId;
+    private String categoryName;
     private String link;
-   // private List<CategoryAttributeValueDTO> categoryAttributeValues;
+    private List<ResponseCategoryAttributeValueDTO> categoryAttributeValues;
 }

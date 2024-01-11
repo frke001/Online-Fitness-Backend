@@ -3,6 +3,8 @@ package org.unibl.etf.fitness.services;
 import org.springframework.security.core.Authentication;
 import org.unibl.etf.fitness.models.dto.*;
 
+import java.util.List;
+
 public interface ClientService {
 
     UpdateClientResponseDTO getDetails(Long id, Authentication auth);
@@ -14,4 +16,6 @@ public interface ClientService {
     boolean changePassword(Long id, ChangePasswordDTO request, Authentication auth);
 
     ResponseFitnessProgramDTO insertFitnessProgram(Long id, RequestFitnessProgramDTO request, Authentication auth);
+
+    List<CardFitnessProgramDTO> getAllProgramsForClient(Long id, Authentication auth);
 }

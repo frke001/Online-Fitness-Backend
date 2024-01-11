@@ -23,6 +23,7 @@ import org.unibl.etf.fitness.services.ImageService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -118,10 +119,10 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public ResponseFitnessProgramDTO insertFitnessProgram(Long id, RequestFitnessProgramDTO request, Authentication auth) {
-//        var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
-//        var jwtUser =(JwtUserDTO)auth.getPrincipal();
-//        if(!jwtUser.getId().equals(user.getId()))
-//            throw new UnauthorizedException();
+        var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
 
         var entity = new FitnessProgramEntity();/* modelMapper.map(request, FitnessProgramEntity.class);*/
         entity.setName(request.getName());
@@ -131,6 +132,9 @@ public class ClientServiceImpl implements ClientService {
         entity.setPrice(request.getPrice());
         entity.setInstructorName(request.getInstructorName());
         entity.setInstructorSurname(request.getInstructorSurname());
+        entity.setLink(request.getLink());
+        entity.setConcreteLocation(request.getConcreteLocation());
+        entity.setDeleted(false);
         entity.setId(null);
         ClientEntity client = new ClientEntity();
         client.setId(id);
@@ -157,5 +161,15 @@ public class ClientServiceImpl implements ClientService {
 
         }
         return modelMapper.map(entity, ResponseFitnessProgramDTO.class);
+    }
+
+    @Override
+    public List<CardFitnessProgramDTO> getAllProgramsForClient(Long id, Authentication auth) {
+        var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        return fitnessProgramRepository.getAllByClientIdAndDeleted(id,false).stream()
+                .map(el -> modelMapper.map(el,CardFitnessProgramDTO.class)).collect(Collectors.toList());
     }
 }

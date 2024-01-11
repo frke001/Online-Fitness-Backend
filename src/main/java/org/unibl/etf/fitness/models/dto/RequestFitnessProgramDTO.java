@@ -22,7 +22,7 @@ import java.util.List;
 public class RequestFitnessProgramDTO {
 
     @NotBlank
-    @Size(max = 50)
+    @Size(max = 100)
     private String name;
 
     @NotBlank
@@ -37,6 +37,9 @@ public class RequestFitnessProgramDTO {
 
     @NotBlank
     private String location;
+
+    @NotBlank
+    private String concreteLocation;
 
     @NotBlank
     @Size(max = 50)
@@ -62,5 +65,6 @@ public class RequestFitnessProgramDTO {
     @NotNull
     private List<CategoryAttributeValueDTO> categoryAttributeValues;
 
+    private String link;
 
 }
