@@ -2,11 +2,18 @@ package org.unibl.etf.fitness.services.impl;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.unibl.etf.fitness.exceptions.NotApprovedException;
+import org.unibl.etf.fitness.models.dto.CardFitnessProgramDTO;
+import org.unibl.etf.fitness.models.dto.FilterDTO;
 import org.unibl.etf.fitness.models.dto.FitnessProgramDTO;
 import org.unibl.etf.fitness.models.dto.ResponseCategoryAttributeValueDTO;
 import org.unibl.etf.fitness.models.entities.FitnessProgramEntity;
+import org.unibl.etf.fitness.models.specification.FitnessSpecification;
 import org.unibl.etf.fitness.repositories.CategoryAttributeRepository;
 import org.unibl.etf.fitness.repositories.FitnessProgramCategoryAttributeRepository;
 import org.unibl.etf.fitness.repositories.FitnessProgramRepository;
@@ -50,5 +57,12 @@ public class FitnessProgramServiceImpl implements FitnessProgramService {
         result.setCategoryAttributeValues(attributes);
 
         return result;
+    }
+
+    @Override
+    public Page<CardFitnessProgramDTO> findAllFitnessPrograms(Pageable pageable, List<FilterDTO> filters) {
+
+        Specification<FitnessProgramEntity> specification = FitnessSpecification.filters(filters);
+        return fitnessProgramRepository.findAll(specification, pageable).map(el-> modelMapper.map(el,CardFitnessProgramDTO.class));
     }
 }

@@ -82,4 +82,7 @@ public class FitnessProgramEntity {
     @OneToMany(mappedBy = "fitnessProgram")
     private List<FitnessProgramCategoryAttributeEntity> categoryAttributeValues;
 
+    @OneToMany(mappedBy = "fitnessProgram")
+    private List<ParticipateEntity> participation;
+
 }

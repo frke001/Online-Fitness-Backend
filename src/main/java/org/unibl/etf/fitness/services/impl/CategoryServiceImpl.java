@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unibl.etf.fitness.models.dto.CategoriesDTO;
 import org.unibl.etf.fitness.models.dto.CategoryAttributeDTO;
+import org.unibl.etf.fitness.models.dto.CategoryNameDTO;
 import org.unibl.etf.fitness.repositories.CategoryAttributeRepository;
 import org.unibl.etf.fitness.repositories.CategoryRepository;
 import org.unibl.etf.fitness.services.CategoryService;
@@ -42,5 +43,10 @@ public class CategoryServiceImpl implements CategoryService {
                 .collect(Collectors.toList());
 
         return categories;
+    }
+
+    @Override
+    public List<CategoryNameDTO> getAllCategoryNames() {
+        return categoryRepository.getAllByDeleted(false).stream().map((el)-> modelMapper.map(el,CategoryNameDTO.class)).collect(Collectors.toList());
     }
 }

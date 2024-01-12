@@ -17,12 +17,15 @@ import org.unibl.etf.fitness.models.enums.Location;
 import org.unibl.etf.fitness.repositories.ClientRepository;
 import org.unibl.etf.fitness.repositories.FitnessProgramCategoryAttributeRepository;
 import org.unibl.etf.fitness.repositories.FitnessProgramRepository;
+import org.unibl.etf.fitness.repositories.ParticipateRepository;
 import org.unibl.etf.fitness.services.ClientService;
 import org.unibl.etf.fitness.services.ImageService;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,18 +37,20 @@ public class ClientServiceImpl implements ClientService {
     private final ImageService imageService;
     private final PasswordEncoder passwordEncoder;
     private final FitnessProgramRepository fitnessProgramRepository;
+    private final ParticipateRepository participateRepository;
 
     private final FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository;
     @PersistenceContext
     private EntityManager entityManager;
 
-    public ClientServiceImpl(ClientRepository clientRepository, ModelMapper modelMapper, ImageService imageService, PasswordEncoder passwordEncoder, FitnessProgramRepository fitnessProgramRepository, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository) {
+    public ClientServiceImpl(ClientRepository clientRepository, ModelMapper modelMapper, ImageService imageService, PasswordEncoder passwordEncoder, FitnessProgramRepository fitnessProgramRepository, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, ParticipateRepository participateRepository) {
         this.clientRepository = clientRepository;
         this.modelMapper = modelMapper;
         this.imageService = imageService;
         this.passwordEncoder = passwordEncoder;
         this.fitnessProgramRepository = fitnessProgramRepository;
         this.fitnessProgramCategoryAttributeRepository = fitnessProgramCategoryAttributeRepository;
+        this.participateRepository = participateRepository;
     }
 
     @Override
@@ -171,5 +176,51 @@ public class ClientServiceImpl implements ClientService {
             throw new UnauthorizedException();
         return fitnessProgramRepository.getAllByClientIdAndDeleted(id,false).stream()
                 .map(el -> modelMapper.map(el,CardFitnessProgramDTO.class)).collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean deleteFitnessProgram(Long clientId, Long programId, Authentication auth) {
+        var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        if(fitnessProgramRepository.existsById(programId)){
+            var entity = fitnessProgramRepository.findById(programId).get();
+            entity.setDeleted(true);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public ResponseParticipateEntityDTO participateInProgram(Long clientId, Long programId, Authentication auth) {
+        var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        if(!fitnessProgramRepository.existsById(programId))
+            throw new NotFoundException();
+        ParticipateEntity participateEntity = new ParticipateEntity();
+        participateEntity.setId(null);
+        FitnessProgramEntity fitnessProgramEntity = new FitnessProgramEntity();
+        fitnessProgramEntity.setId(programId);
+        ClientEntity clientEntity = new ClientEntity();
+        clientEntity.setId(clientId);
+        participateEntity.setFitnessProgram(fitnessProgramEntity);
+        participateEntity.setClient(clientEntity);
+        participateEntity.setStartDate(new Date());
+        participateEntity = participateRepository.saveAndFlush(participateEntity);
+        entityManager.refresh(participateEntity);
+
+        return modelMapper.map(participateEntity,ResponseParticipateEntityDTO.class);
+    }
+
+    @Override
+    public boolean isParticipating(Long clientId, Long programId, Authentication auth) {
+        var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        return participateRepository.existsByClientIdAndFitnessProgramId(clientId, programId);
     }
 }

@@ -57,4 +57,7 @@ public class ClientEntity {
 
     @OneToMany(mappedBy = "client")
     private List<FitnessProgramEntity> fitnessPrograms;
+
+    @OneToMany(mappedBy = "client")
+    private List<ParticipateEntity> participation;
 }

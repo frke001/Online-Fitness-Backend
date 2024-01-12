@@ -47,4 +47,20 @@ public class ClientController {
     public List<CardFitnessProgramDTO> insertFitnessProgramForClient(@PathVariable Long id, Authentication auth){
         return clientService.getAllProgramsForClient(id,auth);
     }
+
+    @DeleteMapping("/{clientId}/fitness-programs/{programId}")
+    public boolean insertFitnessProgramForClient(@PathVariable Long clientId, @PathVariable Long programId, Authentication auth){
+        return clientService.deleteFitnessProgram(clientId,programId,auth);
+    }
+
+    @PostMapping("/{clientId}/fitness-programs/{programId}/participate")
+    public ResponseParticipateEntityDTO participateInProgram(@PathVariable Long clientId, @PathVariable Long programId, Authentication auth){
+        return clientService.participateInProgram(clientId,programId,auth);
+    }
+
+    @GetMapping("/{clientId}/fitness-programs/{programId}/participate")
+    public boolean isParticipating(@PathVariable Long clientId, @PathVariable Long programId, Authentication auth){
+        return clientService.isParticipating(clientId,programId,auth);
+    }
+
 }

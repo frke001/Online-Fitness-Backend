@@ -2,6 +2,7 @@ package org.unibl.etf.fitness.services;
 
 import org.springframework.security.core.Authentication;
 import org.unibl.etf.fitness.models.dto.*;
+import org.unibl.etf.fitness.models.entities.ParticipateEntity;
 
 import java.util.List;
 
@@ -18,4 +19,11 @@ public interface ClientService {
     ResponseFitnessProgramDTO insertFitnessProgram(Long id, RequestFitnessProgramDTO request, Authentication auth);
 
     List<CardFitnessProgramDTO> getAllProgramsForClient(Long id, Authentication auth);
+
+    boolean deleteFitnessProgram(Long clientId, Long programId, Authentication auth);
+
+    ResponseParticipateEntityDTO participateInProgram(Long clientId, Long programId, Authentication auth);
+
+    boolean isParticipating(Long clientId, Long programId, Authentication auth);
+
 }
