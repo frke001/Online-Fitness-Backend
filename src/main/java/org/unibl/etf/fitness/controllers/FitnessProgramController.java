@@ -3,10 +3,9 @@ package org.unibl.etf.fitness.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.unibl.etf.fitness.models.dto.CardFitnessProgramDTO;
-import org.unibl.etf.fitness.models.dto.FilterDTO;
-import org.unibl.etf.fitness.models.dto.FitnessProgramDTO;
+import org.unibl.etf.fitness.models.dto.*;
 import org.unibl.etf.fitness.services.FitnessProgramService;
 
 import java.util.List;
@@ -29,5 +28,10 @@ public class FitnessProgramController {
     @PostMapping()
     public Page<CardFitnessProgramDTO> getAllFitnessPrograms(Pageable pageable, @RequestBody List<FilterDTO> filters){
         return fitnessProgramService.findAllFitnessPrograms(pageable,filters);
+    }
+
+    @PostMapping("/{id}/question")
+    public ResponseQuestionDTO askQuestion(@PathVariable Long id, @RequestBody RequestQuestionDTO request, Authentication authentication){
+        return fitnessProgramService.askQuestion(id,request,authentication);
     }
 }

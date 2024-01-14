@@ -44,7 +44,7 @@ public class ClientController {
     }
 
     @GetMapping("/{id}/fitness-programs")
-    public List<CardFitnessProgramDTO> insertFitnessProgramForClient(@PathVariable Long id, Authentication auth){
+    public List<CardFitnessProgramDTO> getAllProgramsForClient(@PathVariable Long id, Authentication auth){
         return clientService.getAllProgramsForClient(id,auth);
     }
 
@@ -61,6 +61,16 @@ public class ClientController {
     @GetMapping("/{clientId}/fitness-programs/{programId}/participate")
     public boolean isParticipating(@PathVariable Long clientId, @PathVariable Long programId, Authentication auth){
         return clientService.isParticipating(clientId,programId,auth);
+    }
+
+    @GetMapping("/{id}/fitness-programs/in-progress")
+    public List<CardFitnessProgramDTO> getAllProgramsInProgress(@PathVariable Long id, Authentication auth){
+        return clientService.getAllProgramsInProgress(id,auth);
+    }
+
+    @GetMapping("/{id}/fitness-programs/finished")
+    public List<CardFitnessProgramDTO> getAllProgramsFinished(@PathVariable Long id, Authentication auth){
+        return clientService.getAllProgramsFinished(id,auth);
     }
 
 }

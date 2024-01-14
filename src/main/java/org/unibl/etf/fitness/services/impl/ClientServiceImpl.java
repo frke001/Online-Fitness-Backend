@@ -22,10 +22,9 @@ import org.unibl.etf.fitness.services.ClientService;
 import org.unibl.etf.fitness.services.ImageService;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -163,7 +162,6 @@ public class ClientServiceImpl implements ClientService {
             fitnessProgramCategoryAttributeEntity.setCategoryAttribute(categoryAttributeEntity);
             fitnessProgramCategoryAttributeEntity = fitnessProgramCategoryAttributeRepository.saveAndFlush(fitnessProgramCategoryAttributeEntity);
             entityManager.refresh(fitnessProgramCategoryAttributeEntity);
-
         }
         return modelMapper.map(entity, ResponseFitnessProgramDTO.class);
     }
@@ -222,5 +220,67 @@ public class ClientServiceImpl implements ClientService {
         if(!jwtUser.getId().equals(user.getId()))
             throw new UnauthorizedException();
         return participateRepository.existsByClientIdAndFitnessProgramId(clientId, programId);
+    }
+
+    @Override
+    public List<CardFitnessProgramDTO> getAllProgramsInProgress(Long id, Authentication auth) {
+        var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+
+        List<CardFitnessProgramDTO> inProgress = new ArrayList<>();
+
+        ClientEntity clientEntity = clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        List<ParticipateEntity> participation = clientEntity.getParticipation();
+
+        participation.stream().forEach(part->{
+            FitnessProgramEntity fitnessProgramEntity = part.getFitnessProgram();
+            if(!checkDate(fitnessProgramEntity,part)){
+                inProgress.add(modelMapper.map(fitnessProgramEntity, CardFitnessProgramDTO.class));
+            }
+        });
+
+        return inProgress;
+    }
+
+    @Override
+    public List<CardFitnessProgramDTO> getAllProgramsFinished(Long id, Authentication auth) {
+        var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+
+        List<CardFitnessProgramDTO> finished = new ArrayList<>();
+
+        ClientEntity clientEntity = clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        List<ParticipateEntity> participation = clientEntity.getParticipation();
+
+        participation.stream().forEach(part->{
+            FitnessProgramEntity fitnessProgramEntity = part.getFitnessProgram();
+            if(checkDate(fitnessProgramEntity,part)){
+                finished.add(modelMapper.map(fitnessProgramEntity, CardFitnessProgramDTO.class));
+            }
+        });
+
+        return finished;
+    }
+
+    private boolean checkDate(FitnessProgramEntity fitnessProgramEntity ,ParticipateEntity part) {
+        Date currentDate = new Date();
+        long daysToAdd = fitnessProgramEntity.getDays();
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(part.getStartDate());
+
+        calendar.add(Calendar.DAY_OF_MONTH, (int)daysToAdd);
+
+        Date programEndDate = calendar.getTime();
+        System.out.println(currentDate);
+        System.out.println(programEndDate);
+        if(currentDate.after(programEndDate)){ // prosao program
+            return true;
+        }else //  nije prosao program
+            return  false;
     }
 }

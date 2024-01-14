@@ -26,4 +26,7 @@ public interface ClientService {
 
     boolean isParticipating(Long clientId, Long programId, Authentication auth);
 
+    List<CardFitnessProgramDTO> getAllProgramsInProgress(Long id, Authentication auth);
+    List<CardFitnessProgramDTO> getAllProgramsFinished(Long id, Authentication auth);
+
 }

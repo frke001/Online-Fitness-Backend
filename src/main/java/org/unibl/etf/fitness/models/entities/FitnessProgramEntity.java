@@ -85,4 +85,7 @@ public class FitnessProgramEntity {
     @OneToMany(mappedBy = "fitnessProgram")
     private List<ParticipateEntity> participation;
 
+    @OneToMany(mappedBy = "fitnessProgram")
+    private List<QuestionEntity> questions;
+
 }

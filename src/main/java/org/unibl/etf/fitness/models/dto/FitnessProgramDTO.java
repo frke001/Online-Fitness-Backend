@@ -25,6 +25,8 @@ public class FitnessProgramDTO extends ResponseFitnessProgramDTO{
     private Long days;
     private Long imageId;
     private String categoryName;
+    private Long clientId;
     private String link;
     private List<ResponseCategoryAttributeValueDTO> categoryAttributeValues;
+    private List<ResponseQuestionDTO> questions;
 }

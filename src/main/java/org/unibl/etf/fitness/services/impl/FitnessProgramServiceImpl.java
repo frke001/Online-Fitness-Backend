@@ -1,5 +1,8 @@
 package org.unibl.etf.fitness.services.impl;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -8,15 +11,13 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.unibl.etf.fitness.exceptions.NotApprovedException;
-import org.unibl.etf.fitness.models.dto.CardFitnessProgramDTO;
-import org.unibl.etf.fitness.models.dto.FilterDTO;
-import org.unibl.etf.fitness.models.dto.FitnessProgramDTO;
-import org.unibl.etf.fitness.models.dto.ResponseCategoryAttributeValueDTO;
+import org.unibl.etf.fitness.exceptions.NotFoundException;
+import org.unibl.etf.fitness.exceptions.UnauthorizedException;
+import org.unibl.etf.fitness.models.dto.*;
 import org.unibl.etf.fitness.models.entities.FitnessProgramEntity;
+import org.unibl.etf.fitness.models.entities.QuestionEntity;
 import org.unibl.etf.fitness.models.specification.FitnessSpecification;
-import org.unibl.etf.fitness.repositories.CategoryAttributeRepository;
-import org.unibl.etf.fitness.repositories.FitnessProgramCategoryAttributeRepository;
-import org.unibl.etf.fitness.repositories.FitnessProgramRepository;
+import org.unibl.etf.fitness.repositories.*;
 import org.unibl.etf.fitness.services.FitnessProgramService;
 
 import java.util.ArrayList;
@@ -24,18 +25,26 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class FitnessProgramServiceImpl implements FitnessProgramService {
 
     private final FitnessProgramRepository fitnessProgramRepository;
     private final FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository;
     private final CategoryAttributeRepository categoryAttributeRepository;
-    private final ModelMapper modelMapper;
+    private final QuestionRepository questionRepository;
 
-    public FitnessProgramServiceImpl(FitnessProgramRepository fitnessProgramRepository, ModelMapper modelMapper, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, CategoryAttributeRepository categoryAttributeRepository) {
+    private final ClientRepository clientRepository;
+    private final ModelMapper modelMapper;
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    public FitnessProgramServiceImpl(FitnessProgramRepository fitnessProgramRepository, ModelMapper modelMapper, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, CategoryAttributeRepository categoryAttributeRepository, QuestionRepository questionRepository, ClientRepository clientRepository) {
         this.fitnessProgramRepository = fitnessProgramRepository;
         this.modelMapper = modelMapper;
         this.fitnessProgramCategoryAttributeRepository = fitnessProgramCategoryAttributeRepository;
         this.categoryAttributeRepository = categoryAttributeRepository;
+        this.questionRepository = questionRepository;
+        this.clientRepository = clientRepository;
     }
 
     @Override
@@ -56,6 +65,9 @@ public class FitnessProgramServiceImpl implements FitnessProgramService {
 
         result.setCategoryAttributeValues(attributes);
 
+        var questions = fitnessProgram.getQuestions().stream().map(el->modelMapper.map(el,ResponseQuestionDTO.class)).collect(Collectors.toList());
+        result.setQuestions(questions);
+
         return result;
     }
 
@@ -64,5 +76,23 @@ public class FitnessProgramServiceImpl implements FitnessProgramService {
 
         Specification<FitnessProgramEntity> specification = FitnessSpecification.filters(filters);
         return fitnessProgramRepository.findAll(specification, pageable).map(el-> modelMapper.map(el,CardFitnessProgramDTO.class));
+    }
+
+    @Override
+    public ResponseQuestionDTO askQuestion(Long id, RequestQuestionDTO request, Authentication auth) {
+        var user = clientRepository.findById(request.getClientSenderId()).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        QuestionEntity questionEntity = new QuestionEntity();
+        questionEntity.setId(null);
+        questionEntity.setQuestion(request.getQuestion());
+        questionEntity.setClientSender(user);
+        FitnessProgramEntity fitnessProgramEntity = new FitnessProgramEntity();
+        fitnessProgramEntity.setId(id);
+        questionEntity.setFitnessProgram(fitnessProgramEntity);
+        questionEntity = questionRepository.saveAndFlush(questionEntity);
+        entityManager.refresh(questionEntity);
+        return modelMapper.map(questionEntity,ResponseQuestionDTO.class);
     }
 }
