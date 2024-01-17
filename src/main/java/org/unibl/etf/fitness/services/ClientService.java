@@ -28,5 +28,11 @@ public interface ClientService {
 
     List<CardFitnessProgramDTO> getAllProgramsInProgress(Long id, Authentication auth);
     List<CardFitnessProgramDTO> getAllProgramsFinished(Long id, Authentication auth);
+    List<ClientChatDTO> getAllClients();
+    List<MessageDTO> getAllMessages(Long id, Authentication auth);
+
+    MessageDTO insertMessage(Long id, RequestMessageDTO request, Authentication auth);
+
+    MessageDTO updateMessage(Long clientId, Long messageId, Authentication auth);
 
 }

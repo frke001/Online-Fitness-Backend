@@ -60,4 +60,7 @@ public class ClientEntity {
 
     @OneToMany(mappedBy = "client")
     private List<ParticipateEntity> participation;
+
+    @OneToMany(mappedBy = "clientReceiver")
+    private List<MessageEntity> messages;
 }

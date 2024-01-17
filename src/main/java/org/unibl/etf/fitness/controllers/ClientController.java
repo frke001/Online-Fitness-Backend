@@ -17,6 +17,10 @@ public class ClientController {
         this.clientService = clientService;
     }
 
+    @GetMapping()
+    public List<ClientChatDTO> getAllClients(){
+        return clientService.getAllClients();
+    }
     @GetMapping("/{id}")
     public UpdateClientResponseDTO getDetails(@PathVariable Long id, Authentication auth){
         return clientService.getDetails(id,auth);
@@ -72,5 +76,18 @@ public class ClientController {
     public List<CardFitnessProgramDTO> getAllProgramsFinished(@PathVariable Long id, Authentication auth){
         return clientService.getAllProgramsFinished(id,auth);
     }
+    @GetMapping("/{id}/messages")
+    public List<MessageDTO> getAllMessages(@PathVariable Long id, Authentication auth){
+        return clientService.getAllMessages(id,auth);
+    }
+    @PostMapping("/{id}/messages")
+    public MessageDTO insertMessage(@PathVariable Long id, @RequestBody RequestMessageDTO request, Authentication auth){
+        return clientService.insertMessage(id,request,auth);
+    }
+    @PutMapping("/{clientId}/messages/{messageId}")
+    public MessageDTO insertMessage(@PathVariable Long clientId, @PathVariable Long messageId, Authentication auth){
+        return clientService.updateMessage(clientId,messageId,auth);
+    }
+
 
 }

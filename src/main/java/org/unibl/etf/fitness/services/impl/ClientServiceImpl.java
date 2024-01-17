@@ -14,14 +14,12 @@ import org.unibl.etf.fitness.models.dto.*;
 import org.unibl.etf.fitness.models.entities.*;
 import org.unibl.etf.fitness.models.enums.DifficultyLevel;
 import org.unibl.etf.fitness.models.enums.Location;
-import org.unibl.etf.fitness.repositories.ClientRepository;
-import org.unibl.etf.fitness.repositories.FitnessProgramCategoryAttributeRepository;
-import org.unibl.etf.fitness.repositories.FitnessProgramRepository;
-import org.unibl.etf.fitness.repositories.ParticipateRepository;
+import org.unibl.etf.fitness.repositories.*;
 import org.unibl.etf.fitness.services.ClientService;
 import org.unibl.etf.fitness.services.ImageService;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -39,10 +37,11 @@ public class ClientServiceImpl implements ClientService {
     private final ParticipateRepository participateRepository;
 
     private final FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository;
+    private final MessageRepository messageRepository;
     @PersistenceContext
     private EntityManager entityManager;
 
-    public ClientServiceImpl(ClientRepository clientRepository, ModelMapper modelMapper, ImageService imageService, PasswordEncoder passwordEncoder, FitnessProgramRepository fitnessProgramRepository, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, ParticipateRepository participateRepository) {
+    public ClientServiceImpl(ClientRepository clientRepository, ModelMapper modelMapper, ImageService imageService, PasswordEncoder passwordEncoder, FitnessProgramRepository fitnessProgramRepository, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, ParticipateRepository participateRepository, MessageRepository messageRepository) {
         this.clientRepository = clientRepository;
         this.modelMapper = modelMapper;
         this.imageService = imageService;
@@ -50,6 +49,7 @@ public class ClientServiceImpl implements ClientService {
         this.fitnessProgramRepository = fitnessProgramRepository;
         this.fitnessProgramCategoryAttributeRepository = fitnessProgramCategoryAttributeRepository;
         this.participateRepository = participateRepository;
+        this.messageRepository = messageRepository;
     }
 
     @Override
@@ -224,46 +224,105 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public List<CardFitnessProgramDTO> getAllProgramsInProgress(Long id, Authentication auth) {
-        var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
-        var jwtUser =(JwtUserDTO)auth.getPrincipal();
-        if(!jwtUser.getId().equals(user.getId()))
-            throw new UnauthorizedException();
-
-        List<CardFitnessProgramDTO> inProgress = new ArrayList<>();
-
-        ClientEntity clientEntity = clientRepository.findById(id).orElseThrow(NotFoundException::new);
-        List<ParticipateEntity> participation = clientEntity.getParticipation();
-
-        participation.stream().forEach(part->{
-            FitnessProgramEntity fitnessProgramEntity = part.getFitnessProgram();
-            if(!checkDate(fitnessProgramEntity,part)){
-                inProgress.add(modelMapper.map(fitnessProgramEntity, CardFitnessProgramDTO.class));
-            }
-        });
-
-        return inProgress;
+        return getFinishedInProgress(id, auth, false);
     }
 
     @Override
     public List<CardFitnessProgramDTO> getAllProgramsFinished(Long id, Authentication auth) {
+        return getFinishedInProgress(id, auth, true);
+    }
+
+    @Override
+    public List<ClientChatDTO> getAllClients() {
+        var temp = clientRepository.findAll().stream().map(el->modelMapper.map(el,ClientChatDTO.class)).collect(Collectors.toList());
+        return clientRepository.findAll().stream().map(el->modelMapper.map(el,ClientChatDTO.class)).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<MessageDTO> getAllMessages(Long id, Authentication auth) {
+        var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        List<MessageDTO> result = new ArrayList<>();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM, yyyy HH:mm");
+        var received = messageRepository.findAllByClientReceiverId(id).stream().map(el -> {
+            MessageDTO messageDTO = modelMapper.map(el, MessageDTO.class);
+            messageDTO.setCreationDate(dateFormat.format(el.getCreationDate()));
+            return messageDTO;
+        }).collect(Collectors.toList());;
+        var sent = messageRepository.findAllByClientSenderId(id).stream().map(el -> {
+            MessageDTO messageDTO = modelMapper.map(el, MessageDTO.class);
+            messageDTO.setCreationDate(dateFormat.format(el.getCreationDate()));
+            return messageDTO;
+        }).collect(Collectors.toList());;
+        result.addAll(received);
+        result.addAll(sent);
+        return result.stream().sorted(Comparator.comparing(MessageDTO::getCreationDate, Collections.reverseOrder())).collect(Collectors.toList());
+    }
+
+    @Override
+    public MessageDTO insertMessage(Long id, RequestMessageDTO request, Authentication auth) {
+        var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        MessageEntity messageEntity = new MessageEntity();
+        messageEntity.setId(null);
+        messageEntity.setClientSender(user);
+        ClientEntity clientEntity = new ClientEntity();
+        clientEntity.setId(request.getReceiverId());
+        messageEntity.setClientReceiver(clientEntity);
+        messageEntity.setIsRead(false);
+        messageEntity.setText(request.getText());
+        messageEntity.setCreationDate(new Date());
+        messageEntity = messageRepository.saveAndFlush(messageEntity);
+        entityManager.refresh(messageEntity);
+        var result = modelMapper.map(messageEntity,MessageDTO.class);
+        result.setCreationDate(new SimpleDateFormat("dd MMM, yyyy HH:mm").format(messageEntity.getCreationDate()));
+        return result;
+    }
+
+    @Override
+    public MessageDTO updateMessage(Long clientId, Long messageId, Authentication auth) {
+        var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        MessageEntity messageEntity = messageRepository.findById(messageId).orElseThrow(NotFoundException::new);
+        messageEntity.setIsRead(true);
+        messageEntity = messageRepository.saveAndFlush(messageEntity);
+        entityManager.refresh(messageEntity);
+        var result = modelMapper.map(messageEntity,MessageDTO.class);
+        result.setCreationDate(new SimpleDateFormat("dd MMM, yyyy HH:mm").format(messageEntity.getCreationDate()));
+        return result;
+    }
+
+    private List<CardFitnessProgramDTO> getFinishedInProgress(Long id, Authentication auth, boolean check){
         var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
             throw new UnauthorizedException();
 
-        List<CardFitnessProgramDTO> finished = new ArrayList<>();
+        List<CardFitnessProgramDTO> programDTOS = new ArrayList<>();
 
         ClientEntity clientEntity = clientRepository.findById(id).orElseThrow(NotFoundException::new);
         List<ParticipateEntity> participation = clientEntity.getParticipation();
 
         participation.stream().forEach(part->{
             FitnessProgramEntity fitnessProgramEntity = part.getFitnessProgram();
-            if(checkDate(fitnessProgramEntity,part)){
-                finished.add(modelMapper.map(fitnessProgramEntity, CardFitnessProgramDTO.class));
+            if(check){
+                if(checkDate(fitnessProgramEntity,part)){
+                    programDTOS.add(modelMapper.map(fitnessProgramEntity, CardFitnessProgramDTO.class));
+                }
+            }else {
+                if(!checkDate(fitnessProgramEntity,part)){
+                    programDTOS.add(modelMapper.map(fitnessProgramEntity, CardFitnessProgramDTO.class));
+                }
             }
         });
 
-        return finished;
+        return programDTOS;
     }
 
     private boolean checkDate(FitnessProgramEntity fitnessProgramEntity ,ParticipateEntity part) {
