@@ -38,10 +38,12 @@ public class ClientServiceImpl implements ClientService {
 
     private final FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository;
     private final MessageRepository messageRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final AdvisorQuestionRepository advisorQuestionRepository;
     @PersistenceContext
     private EntityManager entityManager;
 
-    public ClientServiceImpl(ClientRepository clientRepository, ModelMapper modelMapper, ImageService imageService, PasswordEncoder passwordEncoder, FitnessProgramRepository fitnessProgramRepository, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, ParticipateRepository participateRepository, MessageRepository messageRepository) {
+    public ClientServiceImpl(ClientRepository clientRepository, ModelMapper modelMapper, ImageService imageService, PasswordEncoder passwordEncoder, FitnessProgramRepository fitnessProgramRepository, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, ParticipateRepository participateRepository, MessageRepository messageRepository, SubscriptionRepository subscriptionRepository, AdvisorQuestionRepository advisorQuestionRepository) {
         this.clientRepository = clientRepository;
         this.modelMapper = modelMapper;
         this.imageService = imageService;
@@ -50,6 +52,8 @@ public class ClientServiceImpl implements ClientService {
         this.fitnessProgramCategoryAttributeRepository = fitnessProgramCategoryAttributeRepository;
         this.participateRepository = participateRepository;
         this.messageRepository = messageRepository;
+        this.subscriptionRepository = subscriptionRepository;
+        this.advisorQuestionRepository = advisorQuestionRepository;
     }
 
     @Override
@@ -139,6 +143,7 @@ public class ClientServiceImpl implements ClientService {
         entity.setLink(request.getLink());
         entity.setConcreteLocation(request.getConcreteLocation());
         entity.setDeleted(false);
+        entity.setCreationDate(new Date());
         entity.setId(null);
         ClientEntity client = new ClientEntity();
         client.setId(id);
@@ -198,15 +203,21 @@ public class ClientServiceImpl implements ClientService {
             throw new UnauthorizedException();
         if(!fitnessProgramRepository.existsById(programId))
             throw new NotFoundException();
-        ParticipateEntity participateEntity = new ParticipateEntity();
-        participateEntity.setId(null);
-        FitnessProgramEntity fitnessProgramEntity = new FitnessProgramEntity();
-        fitnessProgramEntity.setId(programId);
-        ClientEntity clientEntity = new ClientEntity();
-        clientEntity.setId(clientId);
-        participateEntity.setFitnessProgram(fitnessProgramEntity);
-        participateEntity.setClient(clientEntity);
-        participateEntity.setStartDate(new Date());
+        ParticipateEntity participateEntity;
+        if(participateRepository.existsByClientIdAndFitnessProgramId(clientId, programId)){
+            participateEntity = participateRepository.findByClientIdAndFitnessProgramId(clientId,programId);
+            participateEntity.setStartDate(new Date());
+        }else {
+            participateEntity = new ParticipateEntity();
+            participateEntity.setId(null);
+            FitnessProgramEntity fitnessProgramEntity = new FitnessProgramEntity();
+            fitnessProgramEntity.setId(programId);
+            ClientEntity clientEntity = new ClientEntity();
+            clientEntity.setId(clientId);
+            participateEntity.setFitnessProgram(fitnessProgramEntity);
+            participateEntity.setClient(clientEntity);
+            participateEntity.setStartDate(new Date());
+        }
         participateEntity = participateRepository.saveAndFlush(participateEntity);
         entityManager.refresh(participateEntity);
 
@@ -219,7 +230,16 @@ public class ClientServiceImpl implements ClientService {
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
             throw new UnauthorizedException();
-        return participateRepository.existsByClientIdAndFitnessProgramId(clientId, programId);
+        var isParticipating = participateRepository.existsByClientIdAndFitnessProgramId(clientId, programId);
+        if(isParticipating){
+            FitnessProgramEntity fitnessProgramEntity = fitnessProgramRepository.findById(programId).orElseThrow(NotFoundException::new);
+            ParticipateEntity participateEntity = participateRepository.findByClientIdAndFitnessProgramId(clientId, programId);
+            if(!this.checkDate(fitnessProgramEntity, participateEntity)){ // ako nije prosao program(jos ucestvuje)
+                return true;
+            }
+            return false;
+        }
+        return false;
     }
 
     @Override
@@ -296,6 +316,62 @@ public class ClientServiceImpl implements ClientService {
         var result = modelMapper.map(messageEntity,MessageDTO.class);
         result.setCreationDate(new SimpleDateFormat("dd MMM, yyyy HH:mm").format(messageEntity.getCreationDate()));
         return result;
+    }
+
+    @Override
+    public void subscribe(Long clientId, Long categoryId, Authentication auth) {
+        var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        SubscriptionEntity subscriptionEntity = new SubscriptionEntity();
+        subscriptionEntity.setId(null);
+        ClientEntity clientEntity = new ClientEntity();
+        clientEntity.setId(clientId);
+        CategoryEntity categoryEntity = new CategoryEntity();
+        categoryEntity.setId(categoryId);
+        subscriptionEntity.setClient(clientEntity);
+        subscriptionEntity.setCategory(categoryEntity);
+        subscriptionRepository.saveAndFlush(subscriptionEntity);
+    }
+
+    @Override
+    public void unsubscribe(Long clientId, Long categoryId, Authentication auth) {
+        var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        if(subscriptionRepository.existsByClientIdAndCategoryId(clientId, categoryId)){
+            subscriptionRepository.deleteByCategoryIdAndClientId(categoryId,clientId);
+        }else{
+            throw new NotFoundException();
+        }
+    }
+
+    @Override
+    public boolean isSubscribed(Long clientId, Long categoryId, Authentication auth) {
+        return subscriptionRepository.existsByClientIdAndCategoryId(clientId, categoryId);
+    }
+
+    @Override
+    public AdvisorQuestionDTO askAdvisor(Long clientId, RequestAdvisorQuestionDTO request, Authentication auth) {
+        var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        AdvisorQuestionEntity advisorQuestionEntity = new AdvisorQuestionEntity();
+        ClientEntity clientEntity = new ClientEntity();
+        clientEntity.setId(clientId);
+        advisorQuestionEntity.setClientSender(clientEntity);
+        FitnessProgramEntity fitnessProgramEntity = new FitnessProgramEntity();
+        fitnessProgramEntity.setId(request.getFitnessProgramId());
+        advisorQuestionEntity.setFitnessProgram(fitnessProgramEntity);
+        advisorQuestionEntity.setQuestion(request.getQuestion());
+        advisorQuestionEntity.setIsRead(false);
+        advisorQuestionEntity.setCreationDate(new Date());
+        advisorQuestionEntity = advisorQuestionRepository.saveAndFlush(advisorQuestionEntity);
+        entityManager.refresh(advisorQuestionEntity);
+        return modelMapper.map(advisorQuestionEntity,AdvisorQuestionDTO.class);
     }
 
     private List<CardFitnessProgramDTO> getFinishedInProgress(Long id, Authentication auth, boolean check){

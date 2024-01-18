@@ -89,5 +89,24 @@ public class ClientController {
         return clientService.updateMessage(clientId,messageId,auth);
     }
 
+    @PostMapping("/{clientId}/subscribe/{categoryId}")
+    public void subscribe(@PathVariable Long clientId, @PathVariable Long categoryId, Authentication auth){
+        clientService.subscribe(clientId,categoryId,auth);
+    }
+    @DeleteMapping("/{clientId}/unsubscribe/{categoryId}")
+    public void unsubscribe(@PathVariable Long clientId, @PathVariable Long categoryId, Authentication auth){
+        clientService.unsubscribe(clientId,categoryId,auth);
+    }
+    @GetMapping("/{clientId}/subscribe/{categoryId}")
+    public boolean isSubscribed(@PathVariable Long clientId, @PathVariable Long categoryId, Authentication auth){
+        return clientService.isSubscribed(clientId,categoryId,auth);
+    }
+
+    @PostMapping("/{id}/ask-advisor")
+    public AdvisorQuestionDTO askAdvisor(@PathVariable Long id, @RequestBody RequestAdvisorQuestionDTO request, Authentication auth){
+        return  clientService.askAdvisor(id,request,auth);
+    }
+
+
 
 }

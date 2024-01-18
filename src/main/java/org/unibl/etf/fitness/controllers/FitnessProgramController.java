@@ -34,4 +34,9 @@ public class FitnessProgramController {
     public ResponseQuestionDTO askQuestion(@PathVariable Long id, @RequestBody RequestQuestionDTO request, Authentication authentication){
         return fitnessProgramService.askQuestion(id,request,authentication);
     }
+
+    @PostMapping("/info")
+    public List<QuestionFitnessProgramDTO> getAll(@RequestBody IdRequestDTO request, Authentication auth){
+        return fitnessProgramService.getAll(request,auth);
+    }
 }

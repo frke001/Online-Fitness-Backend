@@ -35,4 +35,11 @@ public interface ClientService {
 
     MessageDTO updateMessage(Long clientId, Long messageId, Authentication auth);
 
+    void subscribe(Long clientId, Long categoryId, Authentication auth);
+    void unsubscribe(Long clientId, Long categoryId, Authentication auth);
+
+    boolean isSubscribed(Long clientId, Long categoryId, Authentication auth);
+
+    AdvisorQuestionDTO askAdvisor(Long clientId, RequestAdvisorQuestionDTO request,Authentication auth);
+
 }

@@ -7,6 +7,7 @@ import org.unibl.etf.fitness.models.enums.DifficultyLevel;
 import org.unibl.etf.fitness.models.enums.Location;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -67,6 +68,10 @@ public class FitnessProgramEntity {
     @Column(name = "deleted", nullable = false)
     private Boolean deleted;
 
+    @Basic
+    @Column(name = "creation_date", nullable = false)
+    private Date creationDate;
+
     @OneToOne
     @JoinColumn(name="image_id",referencedColumnName = "id")
     private ImageEntity image;
@@ -87,5 +92,8 @@ public class FitnessProgramEntity {
 
     @OneToMany(mappedBy = "fitnessProgram")
     private List<QuestionEntity> questions;
+
+    @OneToMany(mappedBy = "fitnessProgram")
+    private List<AdvisorQuestionEntity> advisorQuestions;
 
 }

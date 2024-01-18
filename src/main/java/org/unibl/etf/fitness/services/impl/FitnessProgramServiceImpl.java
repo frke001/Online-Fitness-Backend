@@ -95,4 +95,14 @@ public class FitnessProgramServiceImpl implements FitnessProgramService {
         entityManager.refresh(questionEntity);
         return modelMapper.map(questionEntity,ResponseQuestionDTO.class);
     }
+
+    @Override
+    public List<QuestionFitnessProgramDTO> getAll(IdRequestDTO request, Authentication auth) {
+        var user = clientRepository.findById(request.getId()).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        return fitnessProgramRepository.findAll().stream()
+                .map(el->modelMapper.map(el, QuestionFitnessProgramDTO.class)).collect(Collectors.toList());
+    }
 }

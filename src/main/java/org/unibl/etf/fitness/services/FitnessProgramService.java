@@ -14,4 +14,6 @@ public interface FitnessProgramService {
     Page<CardFitnessProgramDTO> findAllFitnessPrograms(Pageable page, List<FilterDTO> filters);
 
     ResponseQuestionDTO askQuestion(Long id, RequestQuestionDTO request, Authentication auth);
+
+    List<QuestionFitnessProgramDTO> getAll(IdRequestDTO request, Authentication auth);
 }

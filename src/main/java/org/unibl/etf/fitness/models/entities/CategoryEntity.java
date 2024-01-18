@@ -24,9 +24,12 @@ public class CategoryEntity {
     private Boolean deleted;
 
     @OneToMany(mappedBy = "category")
-    List<CategoryAttributeEntity> attributes;
+    private List<CategoryAttributeEntity> attributes;
 
     @OneToMany(mappedBy = "category")
-    List<FitnessProgramEntity> fitnessPrograms;
+    private List<FitnessProgramEntity> fitnessPrograms;
+
+    @OneToMany(mappedBy = "category")
+    private List<SubscriptionEntity> subscriptions;
 
 }
