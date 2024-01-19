@@ -106,7 +106,19 @@ public class ClientController {
     public AdvisorQuestionDTO askAdvisor(@PathVariable Long id, @RequestBody RequestAdvisorQuestionDTO request, Authentication auth){
         return  clientService.askAdvisor(id,request,auth);
     }
+    @GetMapping("/{id}/exercises")
+    public List<ResponseExerciseDTO> getAllExercisesForClient(@PathVariable Long id, Authentication auth){
+        return clientService.getAllExercisesForClient(id,auth);
+    }
 
+    @PostMapping("/{id}/exercises")
+    public ResponseExerciseDTO insertExercise(@PathVariable Long id, @RequestBody RequestExerciseDTO request, Authentication auth){
+        return  clientService.insertExercise(id,request,auth);
+    }
 
+    @DeleteMapping("/{clientId}/exercises/{exerciseId}")
+    public void deleteExercise(@PathVariable Long clientId, @PathVariable Long exerciseId, Authentication auth){
+        clientService.deleteExercise(clientId,exerciseId,auth);
+    }
 
 }

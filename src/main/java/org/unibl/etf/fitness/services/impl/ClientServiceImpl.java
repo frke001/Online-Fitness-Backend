@@ -40,10 +40,11 @@ public class ClientServiceImpl implements ClientService {
     private final MessageRepository messageRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final AdvisorQuestionRepository advisorQuestionRepository;
+    private final ExerciseRepository exerciseRepository;
     @PersistenceContext
     private EntityManager entityManager;
 
-    public ClientServiceImpl(ClientRepository clientRepository, ModelMapper modelMapper, ImageService imageService, PasswordEncoder passwordEncoder, FitnessProgramRepository fitnessProgramRepository, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, ParticipateRepository participateRepository, MessageRepository messageRepository, SubscriptionRepository subscriptionRepository, AdvisorQuestionRepository advisorQuestionRepository) {
+    public ClientServiceImpl(ClientRepository clientRepository, ModelMapper modelMapper, ImageService imageService, PasswordEncoder passwordEncoder, FitnessProgramRepository fitnessProgramRepository, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, ParticipateRepository participateRepository, MessageRepository messageRepository, SubscriptionRepository subscriptionRepository, AdvisorQuestionRepository advisorQuestionRepository, ExerciseRepository exerciseRepository) {
         this.clientRepository = clientRepository;
         this.modelMapper = modelMapper;
         this.imageService = imageService;
@@ -54,6 +55,7 @@ public class ClientServiceImpl implements ClientService {
         this.messageRepository = messageRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.advisorQuestionRepository = advisorQuestionRepository;
+        this.exerciseRepository = exerciseRepository;
     }
 
     @Override
@@ -372,6 +374,52 @@ public class ClientServiceImpl implements ClientService {
         advisorQuestionEntity = advisorQuestionRepository.saveAndFlush(advisorQuestionEntity);
         entityManager.refresh(advisorQuestionEntity);
         return modelMapper.map(advisorQuestionEntity,AdvisorQuestionDTO.class);
+    }
+
+    @Override
+    public ResponseExerciseDTO insertExercise(Long clientId, RequestExerciseDTO request, Authentication auth) {
+        var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        ExerciseEntity exerciseEntity = new ExerciseEntity();
+        exerciseEntity.setId(null);
+        exerciseEntity.setClient(user);
+        exerciseEntity.setExercise(request.getExercise());
+        exerciseEntity.setSets(request.getSets());
+        exerciseEntity.setReps(request.getReps());
+        exerciseEntity.setDate(request.getDate());
+        exerciseEntity.setWeight(request.getWeight());
+        exerciseEntity = exerciseRepository.saveAndFlush(exerciseEntity);
+        entityManager.refresh(exerciseEntity);
+        return modelMapper.map(exerciseEntity, ResponseExerciseDTO.class);
+    }
+
+    @Override
+    public void deleteExercise(Long clientId, Long exerciseId, Authentication auth) {
+        var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        if(exerciseRepository.existsById(exerciseId)){
+            exerciseRepository.deleteById(exerciseId);
+        }else {
+            throw new NotFoundException();
+        }
+    }
+
+    @Override
+    public List<ResponseExerciseDTO> getAllExercisesForClient(Long id, Authentication auth) {
+        var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        return exerciseRepository.findAllByClientId(id).stream()
+                .map(el->{
+                    ResponseExerciseDTO responseExerciseDTO = modelMapper.map(el,ResponseExerciseDTO.class);
+                    responseExerciseDTO.setDate(new SimpleDateFormat("dd MMM, yyyy").format(el.getDate()));
+                    return responseExerciseDTO;
+                }).collect(Collectors.toList());
     }
 
     private List<CardFitnessProgramDTO> getFinishedInProgress(Long id, Authentication auth, boolean check){

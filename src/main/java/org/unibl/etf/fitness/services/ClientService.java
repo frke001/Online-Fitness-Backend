@@ -42,4 +42,10 @@ public interface ClientService {
 
     AdvisorQuestionDTO askAdvisor(Long clientId, RequestAdvisorQuestionDTO request,Authentication auth);
 
+    ResponseExerciseDTO insertExercise(Long clientId, RequestExerciseDTO request, Authentication auth);
+
+    void deleteExercise(Long clientId, Long exerciseId, Authentication auth);
+
+    List<ResponseExerciseDTO> getAllExercisesForClient(Long id, Authentication auth);
+
 }

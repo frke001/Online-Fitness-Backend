@@ -69,4 +69,10 @@ public class ClientEntity {
 
     @OneToMany(mappedBy = "clientSender")
     private List<AdvisorQuestionEntity> advisorQuestions;
+
+    @OneToMany(mappedBy = "client")
+    private List<ExerciseEntity> exercises;
+
+    @OneToMany(mappedBy = "client")
+    private List<ProgressEntity> progressWeights;
 }
