@@ -2,7 +2,6 @@ package org.unibl.etf.fitness.services;
 
 import org.springframework.security.core.Authentication;
 import org.unibl.etf.fitness.models.dto.*;
-import org.unibl.etf.fitness.models.entities.ParticipateEntity;
 
 import java.util.List;
 
@@ -47,5 +46,9 @@ public interface ClientService {
     void deleteExercise(Long clientId, Long exerciseId, Authentication auth);
 
     List<ResponseExerciseDTO> getAllExercisesForClient(Long id, Authentication auth);
+
+    ResponseProgressChartDTO insertProgressEntry(Long id, RequestProgressDTO request, Authentication auth);
+
+    ResponseProgressChartDTO getChartValues(Long id, RequestChartDTO request, Authentication auth);
 
 }

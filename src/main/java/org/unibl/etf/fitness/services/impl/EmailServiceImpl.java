@@ -10,10 +10,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.unibl.etf.fitness.models.entities.CategoryEntity;
 import org.unibl.etf.fitness.models.entities.FitnessProgramEntity;
 import org.unibl.etf.fitness.models.entities.SubscriptionEntity;
-import org.unibl.etf.fitness.repositories.CategoryRepository;
 import org.unibl.etf.fitness.repositories.FitnessProgramRepository;
 import org.unibl.etf.fitness.repositories.SubscriptionRepository;
 import org.unibl.etf.fitness.services.EmailService;
@@ -26,7 +24,6 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class EmailServiceImpl implements EmailService {
@@ -95,18 +92,22 @@ public class EmailServiceImpl implements EmailService {
             try {
                 List<FitnessProgramEntity> fitnessPrograms = fitnessProgramRepository
                      .getAllByCategoryIdAndCreationDateIsAfterAndCreationDateIsBefore(el.getCategory().getId(), startDate, endDate);
-                if(fitnessPrograms.size() != 0) {
+
                     SimpleMailMessage message = new SimpleMailMessage();
                     message.setSubject("Notification, new fitness programs for category: " + el.getCategory().getName());
+                if(fitnessPrograms.size() != 0) {
                     String text = "Fitness programs:\n\n";
                     for (var fp : fitnessPrograms) {
                         text = text + "\t * " + fp.getName() + "\n";
                     }
                     message.setText(text);
+                }else{
+                    message.setText("There are no new fitness programs created since yesterday!");
+                }
                     message.setFrom(fromMail);
                     message.setTo(el.getClient().getMail());
                     this.mailSender.send(message);
-                }
+
             }catch(Exception e){
                 throw new RuntimeException(e);
             }

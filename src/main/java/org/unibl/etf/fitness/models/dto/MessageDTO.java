@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
 
 @Data
 @AllArgsConstructor
@@ -17,4 +16,5 @@ public class MessageDTO {
     private Long clientSenderId;
     private Long clientSenderProfileImageId;
     private String clientSenderUsername;
+    private String clientReceiverUsername;
 }

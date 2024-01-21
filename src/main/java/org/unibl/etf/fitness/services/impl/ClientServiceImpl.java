@@ -4,7 +4,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -41,10 +40,12 @@ public class ClientServiceImpl implements ClientService {
     private final SubscriptionRepository subscriptionRepository;
     private final AdvisorQuestionRepository advisorQuestionRepository;
     private final ExerciseRepository exerciseRepository;
+
+    private final ProgressRepository progressRepository;
     @PersistenceContext
     private EntityManager entityManager;
 
-    public ClientServiceImpl(ClientRepository clientRepository, ModelMapper modelMapper, ImageService imageService, PasswordEncoder passwordEncoder, FitnessProgramRepository fitnessProgramRepository, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, ParticipateRepository participateRepository, MessageRepository messageRepository, SubscriptionRepository subscriptionRepository, AdvisorQuestionRepository advisorQuestionRepository, ExerciseRepository exerciseRepository) {
+    public ClientServiceImpl(ClientRepository clientRepository, ModelMapper modelMapper, ImageService imageService, PasswordEncoder passwordEncoder, FitnessProgramRepository fitnessProgramRepository, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, ParticipateRepository participateRepository, MessageRepository messageRepository, SubscriptionRepository subscriptionRepository, AdvisorQuestionRepository advisorQuestionRepository, ExerciseRepository exerciseRepository, ProgressRepository progressRepository) {
         this.clientRepository = clientRepository;
         this.modelMapper = modelMapper;
         this.imageService = imageService;
@@ -56,6 +57,7 @@ public class ClientServiceImpl implements ClientService {
         this.subscriptionRepository = subscriptionRepository;
         this.advisorQuestionRepository = advisorQuestionRepository;
         this.exerciseRepository = exerciseRepository;
+        this.progressRepository = progressRepository;
     }
 
     @Override
@@ -420,6 +422,62 @@ public class ClientServiceImpl implements ClientService {
                     responseExerciseDTO.setDate(new SimpleDateFormat("dd MMM, yyyy").format(el.getDate()));
                     return responseExerciseDTO;
                 }).collect(Collectors.toList());
+    }
+
+    @Override
+    public ResponseProgressChartDTO insertProgressEntry(Long id, RequestProgressDTO request, Authentication auth) {
+        var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        ProgressEntity progressEntity = new ProgressEntity();
+        if(progressRepository.existsByDateAndClientId(request.getDate(), id)){
+            progressEntity = progressRepository.getByDate(request.getDate());
+            progressEntity.setWeight(request.getWeight());
+            progressEntity = progressRepository.saveAndFlush(progressEntity);
+        }else{
+            progressEntity.setId(null);
+            progressEntity.setClient(user);
+            progressEntity.setWeight(request.getWeight());
+            progressEntity.setDate(request.getDate());
+            progressEntity = progressRepository.saveAndFlush(progressEntity);
+        }
+        var progress = progressRepository.getAllByClientId(id);
+        return getValues(id,progress);
+    }
+
+    @Override
+    public ResponseProgressChartDTO getChartValues(Long id, RequestChartDTO request, Authentication auth) {
+        var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+            throw new UnauthorizedException();
+        List<ProgressEntity> progress = progressRepository.getAllByClientId(id);
+        if(request.getStartDate() != null && request.getEndDate() != null){
+            progress = progress.stream().filter(entity -> {
+                        LocalDate localDate = entity.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                        LocalDate startDate = request.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                        LocalDate endDate = request.getEndDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                        return (localDate.isAfter(startDate) || localDate.isEqual(startDate)) && (localDate.isBefore(endDate) || localDate.isEqual(endDate));
+                    })
+                    .collect(Collectors.toList());
+        }
+        return getValues(id,progress);
+    }
+
+    private ResponseProgressChartDTO getValues(Long id, List<ProgressEntity> progressList){
+
+        List<Double> yAxis = new ArrayList<>();
+        List<String> xAxis = new ArrayList<>();
+
+        progressList.stream().sorted(Comparator.comparing(ProgressEntity::getDate)).forEach(el->{
+            xAxis.add(new SimpleDateFormat("dd/MM/yyyy").format(el.getDate()));
+            yAxis.add(el.getWeight());
+        });
+        ResponseProgressChartDTO response = new ResponseProgressChartDTO();
+        response.setXAxis(xAxis);
+        response.setYAxis(yAxis);
+        return response;
     }
 
     private List<CardFitnessProgramDTO> getFinishedInProgress(Long id, Authentication auth, boolean check){

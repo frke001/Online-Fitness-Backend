@@ -121,4 +121,14 @@ public class ClientController {
         clientService.deleteExercise(clientId,exerciseId,auth);
     }
 
+    @PostMapping("/{id}/progress")
+    public ResponseProgressChartDTO insertProgressEntity(@PathVariable Long id, @RequestBody RequestProgressDTO request, Authentication auth){
+        return clientService.insertProgressEntry(id,request,auth);
+    }
+
+    @PostMapping("/{id}/progress/filter")
+    public ResponseProgressChartDTO getProgressChartValues(@PathVariable Long id, @RequestBody RequestChartDTO request, Authentication auth){
+        return clientService.getChartValues(id,request,auth);
+    }
+
 }
