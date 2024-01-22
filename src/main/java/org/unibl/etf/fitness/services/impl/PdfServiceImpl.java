@@ -76,7 +76,7 @@ public class PdfServiceImpl implements PdfService {
             titleCell.setBorder(PdfPCell.NO_BORDER);
             titleTable.addCell(titleCell);
 
-            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+            SimpleDateFormat formatter = new SimpleDateFormat("dd MMM, yyyy");
             PdfPCell dateCell = new PdfPCell(new Paragraph(formatter.format(new Date()), FontFactory.getFont(FontFactory.TIMES_ROMAN,14,BaseColor.BLACK)));
             dateCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             dateCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
