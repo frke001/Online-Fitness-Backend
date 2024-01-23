@@ -8,5 +8,5 @@ import java.io.IOException;
 public interface PdfService {
 
     void generatePdfForClient(Long id, Authentication auth);
-    PdfDTO downloadPdf(Long id) throws IOException;
+    PdfDTO downloadPdf(Long id, Authentication auth) throws IOException;
 }

@@ -26,8 +26,8 @@ public class PdfController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> downloadPdf(@PathVariable Long id) throws IOException {
-        PdfDTO pdfDTO = pdfService.downloadPdf(id);
+    public ResponseEntity<?> downloadPdf(@PathVariable Long id, Authentication auth) throws IOException {
+        PdfDTO pdfDTO = pdfService.downloadPdf(id,auth);
         return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/pdf"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + pdfDTO.getFileName()+".pdf" + "\"")
                 .body(pdfDTO.getData());

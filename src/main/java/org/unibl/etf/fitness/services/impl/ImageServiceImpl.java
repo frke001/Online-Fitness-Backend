@@ -3,6 +3,7 @@ package org.unibl.etf.fitness.services.impl;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.unibl.etf.fitness.models.dto.ImageDTO;
 import org.unibl.etf.fitness.models.entities.ImageEntity;
 import org.unibl.etf.fitness.repositories.ImageRepository;
 import org.unibl.etf.fitness.services.ImageService;
+import org.unibl.etf.fitness.services.LogService;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +34,8 @@ public class ImageServiceImpl implements ImageService {
     private File path;
     private final ImageRepository imageRepository;
     private final ModelMapper modelMapper;
+    private final LogService logService;
+    private final HttpServletRequest request;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -52,9 +56,11 @@ public class ImageServiceImpl implements ImageService {
 //            path.mkdir();
     }
 
-    public ImageServiceImpl(ImageRepository imageRepository, ModelMapper modelMapper) {
+    public ImageServiceImpl(ImageRepository imageRepository, ModelMapper modelMapper, LogService logService, HttpServletRequest request) {
         this.imageRepository = imageRepository;
         this.modelMapper = modelMapper;
+        this.logService = logService;
+        this.request = request;
     }
 
     @Override
@@ -65,6 +71,7 @@ public class ImageServiceImpl implements ImageService {
         imageRepository.saveAndFlush(image);
         entityManager.refresh(image);//dobio sam id od baze sada cuvamo na fajl sistemu
         Files.write(Path.of(getPath(image)), file.getBytes());
+        logService.info("New image uploaded! Name: " + name);
         return image.getId();
     }
     @Override
@@ -74,6 +81,7 @@ public class ImageServiceImpl implements ImageService {
         var data = Files.readAllBytes(Path.of(path));
         ImageDTO imageDto = modelMapper.map(image, ImageDTO.class);
         imageDto.setData(data);
+        logService.info("New image downloaded! Address: " + request.getRemoteAddr());
         return imageDto;
     }
 
@@ -83,6 +91,7 @@ public class ImageServiceImpl implements ImageService {
         var path = getPath(image);
         File file=new File(path);
         file.delete();
+        logService.info("Image deleted! Image: " + image.getName());
     }
 
     private String getPath(ImageEntity image) {
@@ -90,5 +99,21 @@ public class ImageServiceImpl implements ImageService {
         var name = image.getId() + "." + tmp[1];
         var file = this.path + File.separator + name; // /images/id.png npr
         return file;
+    }
+
+    public String getPathById(Long id){
+        var entity = imageRepository.findById(id).get();
+        return getPath(entity);
+    }
+
+    public String getNameById(Long id){
+        var entity = imageRepository.findById(id).get();
+        return entity.getName();
+    }
+
+    @Override
+    public void deleteImageById(Long id) throws IOException {
+        var entity = imageRepository.findById(id).get();
+        deleteImage(entity);
     }
 }

@@ -15,4 +15,9 @@ public interface ImageService {
     //ImageDTO uploadFile(MultipartFile file) throws IOException;
 
     void deleteImage(ImageEntity image) throws IOException;
+
+    String getPathById(Long id);
+    String getNameById(Long id);
+
+    void deleteImageById(Long id) throws IOException;
 }

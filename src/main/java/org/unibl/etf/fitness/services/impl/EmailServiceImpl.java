@@ -10,12 +10,16 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.unibl.etf.fitness.models.dto.AdvisorMailDTO;
 import org.unibl.etf.fitness.models.entities.FitnessProgramEntity;
 import org.unibl.etf.fitness.models.entities.SubscriptionEntity;
 import org.unibl.etf.fitness.repositories.FitnessProgramRepository;
 import org.unibl.etf.fitness.repositories.SubscriptionRepository;
 import org.unibl.etf.fitness.services.EmailService;
+import org.unibl.etf.fitness.services.ImageService;
+import org.unibl.etf.fitness.services.LogService;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -39,11 +43,16 @@ public class EmailServiceImpl implements EmailService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final FitnessProgramRepository fitnessProgramRepository;
-    public EmailServiceImpl(JavaMailSender mailSender, SubscriptionRepository subscriptionRepository, FitnessProgramRepository fitnessProgramRepository) {
+
+    private final ImageService imageService;
+    private final LogService logService;
+    public EmailServiceImpl(JavaMailSender mailSender, SubscriptionRepository subscriptionRepository, FitnessProgramRepository fitnessProgramRepository, ImageService imageService, LogService logService) {
         this.mailSender = mailSender;
         this.subscriptionRepository = subscriptionRepository;
         this.fitnessProgramRepository = fitnessProgramRepository;
 
+        this.imageService = imageService;
+        this.logService = logService;
     }
     @Async
     @Override
@@ -71,6 +80,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setFrom(fromMail);
             helper.setTo(to);
             this.mailSender.send(message);
+            logService.info("New verification mail sent! To: " + to + ".");
         }
         catch(Exception e){
             throw new RuntimeException(e);
@@ -102,15 +112,41 @@ public class EmailServiceImpl implements EmailService {
                     }
                     message.setText(text);
                 }else{
-                    message.setText("There are no new fitness programs created since yesterday!");
+                    message.setText("There are no new fitness programs created today!");
                 }
                     message.setFrom(fromMail);
                     message.setTo(el.getClient().getMail());
                     this.mailSender.send(message);
-
+                    logService.info("New notification mail sent! To: " + el.getClient().getMail() + ". For category: " + el.getCategory().getName() + ".");
             }catch(Exception e){
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    @Async
+    @Override
+    public void sendAdvisorMail(AdvisorMailDTO request) {
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            var helper = new MimeMessageHelper(message, true);
+            if(request.getSubject() != null)
+                helper.setSubject(request.getSubject());
+            helper.setText(request.getMessage());
+            helper.setFrom(fromMail);
+            helper.setTo(request.getTo());
+            if(request.getAttachmentId() != null) {
+                helper.addAttachment(imageService.getNameById(request.getAttachmentId()), new File(imageService.getPathById(request.getAttachmentId())));
+            }
+            this.mailSender.send(message);
+            logService.info("New advisor mail sent! To: " + request.getTo() + ".");
+            if(request.getAttachmentId() != null) {
+                imageService.deleteImageById(request.getAttachmentId());
+            }
+        }
+        catch(Exception e){
+            throw new RuntimeException(e);
+        }
     }
 }

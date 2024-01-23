@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import org.unibl.etf.fitness.models.enums.Location;
 import org.unibl.etf.fitness.repositories.*;
 import org.unibl.etf.fitness.services.ClientService;
 import org.unibl.etf.fitness.services.ImageService;
+import org.unibl.etf.fitness.services.LogService;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -42,10 +44,12 @@ public class ClientServiceImpl implements ClientService {
     private final ExerciseRepository exerciseRepository;
 
     private final ProgressRepository progressRepository;
+
+    private final LogService logService;
     @PersistenceContext
     private EntityManager entityManager;
 
-    public ClientServiceImpl(ClientRepository clientRepository, ModelMapper modelMapper, ImageService imageService, PasswordEncoder passwordEncoder, FitnessProgramRepository fitnessProgramRepository, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, ParticipateRepository participateRepository, MessageRepository messageRepository, SubscriptionRepository subscriptionRepository, AdvisorQuestionRepository advisorQuestionRepository, ExerciseRepository exerciseRepository, ProgressRepository progressRepository) {
+    public ClientServiceImpl(ClientRepository clientRepository, ModelMapper modelMapper, ImageService imageService, PasswordEncoder passwordEncoder, FitnessProgramRepository fitnessProgramRepository, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, ParticipateRepository participateRepository, MessageRepository messageRepository, SubscriptionRepository subscriptionRepository, AdvisorQuestionRepository advisorQuestionRepository, ExerciseRepository exerciseRepository, ProgressRepository progressRepository, LogService logService) {
         this.clientRepository = clientRepository;
         this.modelMapper = modelMapper;
         this.imageService = imageService;
@@ -58,14 +62,18 @@ public class ClientServiceImpl implements ClientService {
         this.advisorQuestionRepository = advisorQuestionRepository;
         this.exerciseRepository = exerciseRepository;
         this.progressRepository = progressRepository;
+        this.logService = logService;
     }
 
     @Override
     public UpdateClientResponseDTO getDetails(Long id, Authentication auth) {
         var jwtUser=(JwtUserDTO) auth.getPrincipal();
-        if(!jwtUser.getId().equals(id))
+        if(!jwtUser.getId().equals(id)) {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         var entity=clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        //logService.info("Profile details fetched. User: " + entity.getUsername() + ".");
         return modelMapper.map(entity,UpdateClientResponseDTO.class);
     }
 
@@ -73,7 +81,10 @@ public class ClientServiceImpl implements ClientService {
     public UpdateClientResponseDTO updateProfile(Long id, UpdateClientRequestDTO request, Authentication auth) {
         var jwtUser=(JwtUserDTO) auth.getPrincipal();
         if(!jwtUser.getId().equals(id))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         var entity=clientRepository.findById(id).orElseThrow(NotFoundException::new);
         if(request.getCity() != null)
             entity.setCity(request.getCity());
@@ -83,6 +94,7 @@ public class ClientServiceImpl implements ClientService {
             entity.setSurname(request.getSurname());
         if(request.getName() != null)
             entity.setName(request.getName());
+        logService.info("Profile updated successfully. User: " + entity.getUsername() + ".");
         return modelMapper.map(entity,UpdateClientResponseDTO.class);
     }
 
@@ -90,18 +102,24 @@ public class ClientServiceImpl implements ClientService {
     public boolean updateProfilePicture(Long id, UpdatePictureDTO request, Authentication auth) {
         var jwtUser=(JwtUserDTO) auth.getPrincipal();
         if(!jwtUser.getId().equals(id))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         var entity=clientRepository.findById(id).orElseThrow(NotFoundException::new);
         ImageEntity imageEntity = new ImageEntity();
         imageEntity.setId(request.getProfilePictureId());
         if(entity.getProfileImage() != null) {
             try {
+
                 imageService.deleteImage(entity.getProfileImage());
+                logService.info("Old profile picture deleted. User: " + entity.getUsername() + ".");
             } catch (IOException e) {
                 System.out.println(e.getMessage());
                 return false;
             }
         }
+        logService.info("Profile picture updated successfully. User: " + entity.getUsername() + ".");
         entity.setProfileImage(imageEntity);
         return true;
     }
@@ -110,9 +128,12 @@ public class ClientServiceImpl implements ClientService {
     public Long getImageId(Long id, Authentication auth) {
         var jwtUser=(JwtUserDTO) auth.getPrincipal();
         if(!jwtUser.getId().equals(id))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         var entity=clientRepository.findById(id).orElseThrow(NotFoundException::new);
-
+        logService.info("Image id fetched. User: " + entity.getUsername() + ".");
         return entity.getProfileImage() != null? entity.getProfileImage().getId() : null;
     }
 
@@ -121,10 +142,16 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
 
-        if(!passwordEncoder.matches(request.getOldPassword(), user.getPassword()))
+        if(!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            logService.warning("Change password attempted with wrong credentials. User: " + user.getUsername() + ".");
             return false;
+        }
+        logService.info("Change password successful. User: " + user.getUsername() + ".");
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         return true;
     }
@@ -134,7 +161,10 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
 
         var entity = new FitnessProgramEntity();/* modelMapper.map(request, FitnessProgramEntity.class);*/
         entity.setName(request.getName());
@@ -172,6 +202,7 @@ public class ClientServiceImpl implements ClientService {
             fitnessProgramCategoryAttributeEntity = fitnessProgramCategoryAttributeRepository.saveAndFlush(fitnessProgramCategoryAttributeEntity);
             entityManager.refresh(fitnessProgramCategoryAttributeEntity);
         }
+        logService.info("New fitness program created. User: " + user.getUsername() + ". Fitness program: " + entity.getName() + ".");
         return modelMapper.map(entity, ResponseFitnessProgramDTO.class);
     }
 
@@ -180,7 +211,11 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
+        //logService.info("All client's fitness programs fetched. User: " + user.getUsername() + ".");
         return fitnessProgramRepository.getAllByClientIdAndDeleted(id,false).stream()
                 .map(el -> modelMapper.map(el,CardFitnessProgramDTO.class)).collect(Collectors.toList());
     }
@@ -190,10 +225,14 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         if(fitnessProgramRepository.existsById(programId)){
             var entity = fitnessProgramRepository.findById(programId).get();
             entity.setDeleted(true);
+            logService.info("Fitness program deleted. User: " + user.getUsername() + ". Fitness program: " + entity.getName() + ".");
             return true;
         }
         return false;
@@ -204,7 +243,10 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         if(!fitnessProgramRepository.existsById(programId))
             throw new NotFoundException();
         ParticipateEntity participateEntity;
@@ -224,7 +266,7 @@ public class ClientServiceImpl implements ClientService {
         }
         participateEntity = participateRepository.saveAndFlush(participateEntity);
         entityManager.refresh(participateEntity);
-
+        logService.info("New participation in fitness program. User: " + user.getUsername() + ".");
         return modelMapper.map(participateEntity,ResponseParticipateEntityDTO.class);
     }
 
@@ -233,7 +275,10 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         var isParticipating = participateRepository.existsByClientIdAndFitnessProgramId(clientId, programId);
         if(isParticipating){
             FitnessProgramEntity fitnessProgramEntity = fitnessProgramRepository.findById(programId).orElseThrow(NotFoundException::new);
@@ -267,7 +312,10 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         List<MessageDTO> result = new ArrayList<>();
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM, yyyy HH:mm");
         var received = messageRepository.findAllByClientReceiverId(id).stream().map(el -> {
@@ -290,7 +338,10 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         MessageEntity messageEntity = new MessageEntity();
         messageEntity.setId(null);
         messageEntity.setClientSender(user);
@@ -304,6 +355,7 @@ public class ClientServiceImpl implements ClientService {
         entityManager.refresh(messageEntity);
         var result = modelMapper.map(messageEntity,MessageDTO.class);
         result.setCreationDate(new SimpleDateFormat("dd MMM, yyyy HH:mm").format(messageEntity.getCreationDate()));
+        logService.info("New message created! User: " + user.getUsername() + ".");
         return result;
     }
 
@@ -312,13 +364,17 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         MessageEntity messageEntity = messageRepository.findById(messageId).orElseThrow(NotFoundException::new);
         messageEntity.setIsRead(true);
         messageEntity = messageRepository.saveAndFlush(messageEntity);
         entityManager.refresh(messageEntity);
         var result = modelMapper.map(messageEntity,MessageDTO.class);
         result.setCreationDate(new SimpleDateFormat("dd MMM, yyyy HH:mm").format(messageEntity.getCreationDate()));
+        logService.info("Message has been read! User: " + user.getUsername() + ".");
         return result;
     }
 
@@ -327,7 +383,10 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         SubscriptionEntity subscriptionEntity = new SubscriptionEntity();
         subscriptionEntity.setId(null);
         ClientEntity clientEntity = new ClientEntity();
@@ -336,6 +395,7 @@ public class ClientServiceImpl implements ClientService {
         categoryEntity.setId(categoryId);
         subscriptionEntity.setClient(clientEntity);
         subscriptionEntity.setCategory(categoryEntity);
+        logService.info("New category subscription! User: " + user.getUsername() + ".");
         subscriptionRepository.saveAndFlush(subscriptionEntity);
     }
 
@@ -344,9 +404,13 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         if(subscriptionRepository.existsByClientIdAndCategoryId(clientId, categoryId)){
             subscriptionRepository.deleteByCategoryIdAndClientId(categoryId,clientId);
+            logService.info("Unsubscribing from a category! User: " + user.getUsername() + ".");
         }else{
             throw new NotFoundException();
         }
@@ -362,7 +426,10 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         AdvisorQuestionEntity advisorQuestionEntity = new AdvisorQuestionEntity();
         ClientEntity clientEntity = new ClientEntity();
         clientEntity.setId(clientId);
@@ -375,7 +442,9 @@ public class ClientServiceImpl implements ClientService {
         advisorQuestionEntity.setCreationDate(new Date());
         advisorQuestionEntity = advisorQuestionRepository.saveAndFlush(advisorQuestionEntity);
         entityManager.refresh(advisorQuestionEntity);
+        logService.info("New advisor question sent! User: " + user.getUsername() + ".");
         return modelMapper.map(advisorQuestionEntity,AdvisorQuestionDTO.class);
+
     }
 
     @Override
@@ -383,7 +452,10 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         ExerciseEntity exerciseEntity = new ExerciseEntity();
         exerciseEntity.setId(null);
         exerciseEntity.setClient(user);
@@ -394,6 +466,7 @@ public class ClientServiceImpl implements ClientService {
         exerciseEntity.setWeight(request.getWeight());
         exerciseEntity = exerciseRepository.saveAndFlush(exerciseEntity);
         entityManager.refresh(exerciseEntity);
+        logService.info("New exercise created! User: " + user.getUsername() + ". Exercise: " + exerciseEntity.getExercise() + ".");
         return modelMapper.map(exerciseEntity, ResponseExerciseDTO.class);
     }
 
@@ -402,8 +475,12 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(clientId).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         if(exerciseRepository.existsById(exerciseId)){
+            logService.info("Exercise deleted! User: " + user.getUsername() + ".");
             exerciseRepository.deleteById(exerciseId);
         }else {
             throw new NotFoundException();
@@ -415,7 +492,10 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         return exerciseRepository.findAllByClientId(id).stream()
                 .map(el->{
                     ResponseExerciseDTO responseExerciseDTO = modelMapper.map(el,ResponseExerciseDTO.class);
@@ -429,7 +509,10 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         ProgressEntity progressEntity = new ProgressEntity();
         if(progressRepository.existsByDateAndClientId(request.getDate(), id)){
             progressEntity = progressRepository.getByDate(request.getDate());
@@ -442,6 +525,7 @@ public class ClientServiceImpl implements ClientService {
             progressEntity.setDate(request.getDate());
             progressEntity = progressRepository.saveAndFlush(progressEntity);
         }
+        logService.info("New weight inserted! User: " + user.getUsername() + ".");
         var progress = progressRepository.getAllByClientId(id);
         return getValues(id,progress);
     }
@@ -451,7 +535,10 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         List<ProgressEntity> progress = progressRepository.getAllByClientId(id);
         if(request.getStartDate() != null && request.getEndDate() != null){
             progress = progress.stream().filter(entity -> {
@@ -484,7 +571,10 @@ public class ClientServiceImpl implements ClientService {
         var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
 
         List<CardFitnessProgramDTO> programDTOS = new ArrayList<>();
 

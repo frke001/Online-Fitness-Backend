@@ -1,5 +1,6 @@
 package org.unibl.etf.fitness.services.impl;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import org.unibl.etf.fitness.models.dto.CategoryNameDTO;
 import org.unibl.etf.fitness.repositories.CategoryAttributeRepository;
 import org.unibl.etf.fitness.repositories.CategoryRepository;
 import org.unibl.etf.fitness.services.CategoryService;
+import org.unibl.etf.fitness.services.LogService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,12 +21,16 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final CategoryAttributeRepository categoryAttributeRepository;
     private final ModelMapper modelMapper;
+    private final LogService logService;
+    private final HttpServletRequest request;
 
 
-    public CategoryServiceImpl(CategoryRepository categoryRepository, CategoryAttributeRepository categoryAttributeRepository, ModelMapper modelMapper) {
+    public CategoryServiceImpl(CategoryRepository categoryRepository, CategoryAttributeRepository categoryAttributeRepository, ModelMapper modelMapper, LogService logService, HttpServletRequest request) {
         this.categoryRepository = categoryRepository;
         this.categoryAttributeRepository = categoryAttributeRepository;
         this.modelMapper = modelMapper;
+        this.logService = logService;
+        this.request = request;
     }
 
     @Override
@@ -41,12 +47,13 @@ public class CategoryServiceImpl implements CategoryService {
                     return categoriesDTO;
                 })
                 .collect(Collectors.toList());
-
+        //logService.info("All categories fetched. Address: " + request.getRemoteAddr() + ".");
         return categories;
     }
 
     @Override
     public List<CategoryNameDTO> getAllCategoryNames() {
+        //logService.info("All categories names fetched. Address: " + request.getRemoteAddr() + ".");
         return categoryRepository.getAllByDeleted(false).stream().map((el)-> modelMapper.map(el,CategoryNameDTO.class)).collect(Collectors.toList());
     }
 }

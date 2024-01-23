@@ -19,6 +19,7 @@ import org.unibl.etf.fitness.models.entities.QuestionEntity;
 import org.unibl.etf.fitness.models.specification.FitnessSpecification;
 import org.unibl.etf.fitness.repositories.*;
 import org.unibl.etf.fitness.services.FitnessProgramService;
+import org.unibl.etf.fitness.services.LogService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,16 +36,18 @@ public class FitnessProgramServiceImpl implements FitnessProgramService {
 
     private final ClientRepository clientRepository;
     private final ModelMapper modelMapper;
+    private final LogService logService;
     @PersistenceContext
     private EntityManager entityManager;
 
-    public FitnessProgramServiceImpl(FitnessProgramRepository fitnessProgramRepository, ModelMapper modelMapper, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, CategoryAttributeRepository categoryAttributeRepository, QuestionRepository questionRepository, ClientRepository clientRepository) {
+    public FitnessProgramServiceImpl(FitnessProgramRepository fitnessProgramRepository, ModelMapper modelMapper, FitnessProgramCategoryAttributeRepository fitnessProgramCategoryAttributeRepository, CategoryAttributeRepository categoryAttributeRepository, QuestionRepository questionRepository, ClientRepository clientRepository, LogService logService) {
         this.fitnessProgramRepository = fitnessProgramRepository;
         this.modelMapper = modelMapper;
         this.fitnessProgramCategoryAttributeRepository = fitnessProgramCategoryAttributeRepository;
         this.categoryAttributeRepository = categoryAttributeRepository;
         this.questionRepository = questionRepository;
         this.clientRepository = clientRepository;
+        this.logService = logService;
     }
 
     @Override
@@ -83,7 +86,10 @@ public class FitnessProgramServiceImpl implements FitnessProgramService {
         var user = clientRepository.findById(request.getClientSenderId()).orElseThrow(NotFoundException::new);
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
             throw new UnauthorizedException();
+        }
         QuestionEntity questionEntity = new QuestionEntity();
         questionEntity.setId(null);
         questionEntity.setQuestion(request.getQuestion());
@@ -93,6 +99,7 @@ public class FitnessProgramServiceImpl implements FitnessProgramService {
         questionEntity.setFitnessProgram(fitnessProgramEntity);
         questionEntity = questionRepository.saveAndFlush(questionEntity);
         entityManager.refresh(questionEntity);
+        logService.info("New fitness program question created! User: " + user.getUsername() + ".");
         return modelMapper.map(questionEntity,ResponseQuestionDTO.class);
     }
 

@@ -4,6 +4,7 @@ import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.unibl.etf.fitness.models.dto.AdvisorMailDTO;
 
 public interface EmailService {
     @Async
@@ -15,4 +16,7 @@ public interface EmailService {
     @Async
     @Scheduled
     void sendNewFitnessProgramsForCategory();
+
+    @Async
+    void sendAdvisorMail(AdvisorMailDTO request);
 }

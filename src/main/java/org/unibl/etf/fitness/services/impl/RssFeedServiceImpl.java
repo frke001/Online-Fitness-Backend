@@ -4,10 +4,13 @@ import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.unibl.etf.fitness.models.dto.RssFeedDTO;
 import org.unibl.etf.fitness.models.dto.RssItem;
+import org.unibl.etf.fitness.services.LogService;
 import org.unibl.etf.fitness.services.RssFeedService;
 
 import java.net.URL;
@@ -18,6 +21,14 @@ public class RssFeedServiceImpl implements RssFeedService {
 
     @Value("${rss.feed.url}")
     private String feedUrl;
+
+    private final LogService logService;
+    private final HttpServletRequest request;
+
+    public RssFeedServiceImpl(LogService logService, HttpServletRequest request) {
+        this.logService = logService;
+        this.request = request;
+    }
 
     @Override
     public RssFeedDTO getRssFeed() {
@@ -36,7 +47,7 @@ public class RssFeedServiceImpl implements RssFeedService {
             rssFeed.setRssItems(feed.getEntries().stream()
                     .map(this::mapToRssItem)
                     .collect(Collectors.toList()));
-
+            logService.info("RSS feed consumed! Address: " + request.getRemoteAddr());
             return rssFeed;
         } catch (Exception e) {
             throw new RuntimeException("Error fetching or parsing RSS feed", e);

@@ -5,16 +5,20 @@ import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.unibl.etf.fitness.exceptions.NotFoundException;
+import org.unibl.etf.fitness.exceptions.UnauthorizedException;
+import org.unibl.etf.fitness.models.dto.JwtUserDTO;
 import org.unibl.etf.fitness.models.dto.PdfDTO;
 import org.unibl.etf.fitness.models.entities.ExerciseEntity;
 import org.unibl.etf.fitness.models.entities.ProgressEntity;
 import org.unibl.etf.fitness.repositories.ClientRepository;
 import org.unibl.etf.fitness.repositories.ExerciseRepository;
 import org.unibl.etf.fitness.repositories.ProgressRepository;
+import org.unibl.etf.fitness.services.LogService;
 import org.unibl.etf.fitness.services.PdfService;
 
 import java.io.File;
@@ -34,12 +38,14 @@ public class PdfServiceImpl implements PdfService {
     private final ProgressRepository progressRepository;
     private final ClientRepository clientRepository;
 
+    private final LogService logService;
     private File path;
 
-    public PdfServiceImpl(ExerciseRepository exerciseRepository, ProgressRepository progressRepository, ClientRepository clientRepository) {
+    public PdfServiceImpl(ExerciseRepository exerciseRepository, ProgressRepository progressRepository, ClientRepository clientRepository, LogService logService) {
         this.exerciseRepository = exerciseRepository;
         this.progressRepository = progressRepository;
         this.clientRepository = clientRepository;
+        this.logService = logService;
     }
 
     @PostConstruct
@@ -53,9 +59,12 @@ public class PdfServiceImpl implements PdfService {
     @Override
     public void generatePdfForClient(Long id, Authentication auth) {
         var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
-//        var jwtUser =(JwtUserDTO)auth.getPrincipal();
-//        if(!jwtUser.getId().equals(user.getId()))
-//            throw new UnauthorizedException();
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
+            throw new UnauthorizedException();
+        }
 
         List<ExerciseEntity> exercises = exerciseRepository.findAllByClientId(id);
         List<ProgressEntity> progress = progressRepository.getAllByClientId(id);
@@ -147,6 +156,7 @@ public class PdfServiceImpl implements PdfService {
             }
             document.close();
             writer.close();
+            logService.info("PDF generated! User: " + user.getUsername());
         }catch(IOException | DocumentException e){
             System.out.println(e.getMessage());
         }
@@ -170,11 +180,18 @@ public class PdfServiceImpl implements PdfService {
     }
 
     @Override
-    public PdfDTO downloadPdf(Long id) throws IOException {
+    public PdfDTO downloadPdf(Long id, Authentication auth) throws IOException {
+        var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
+        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+        if(!jwtUser.getId().equals(user.getId()))
+        {
+            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
+            throw new UnauthorizedException();
+        }
         File pdfFile = new File(path + File.separator + "Activities_" + id + ".pdf");
         if(!pdfFile.exists())
             throw new NotFoundException();
-
+        logService.info("PDF downloaded! User: " + user.getUsername());
         var data = Files.readAllBytes(Paths.get(pdfFile.toString()));
         return new PdfDTO("Activities_" + id, data);
     }
