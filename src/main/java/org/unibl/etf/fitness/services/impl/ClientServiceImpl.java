@@ -109,16 +109,18 @@ public class ClientServiceImpl implements ClientService {
         var entity=clientRepository.findById(id).orElseThrow(NotFoundException::new);
         ImageEntity imageEntity = new ImageEntity();
         imageEntity.setId(request.getProfilePictureId());
-        if(entity.getProfileImage() != null) {
-            try {
 
-                imageService.deleteImage(entity.getProfileImage());
-                logService.info("Old profile picture deleted. User: " + entity.getUsername() + ".");
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-                return false;
-            }
-        }
+//        if(entity.getProfileImage() != null) {
+//            try {
+//                ImageEntity temp = entity.getProfileImage();
+//                entity.setProfileImage(null);
+//                imageService.deleteImage(temp);
+//                logService.info("Old profile picture deleted. User: " + entity.getUsername() + ".");
+//            } catch (IOException e) {
+//                System.out.println(e.getMessage());
+//                return false;
+//            }
+//        }
         logService.info("Profile picture updated successfully. User: " + entity.getUsername() + ".");
         entity.setProfileImage(imageEntity);
         return true;
@@ -583,13 +585,15 @@ public class ClientServiceImpl implements ClientService {
 
         participation.stream().forEach(part->{
             FitnessProgramEntity fitnessProgramEntity = part.getFitnessProgram();
-            if(check){
-                if(checkDate(fitnessProgramEntity,part)){
-                    programDTOS.add(modelMapper.map(fitnessProgramEntity, CardFitnessProgramDTO.class));
-                }
-            }else {
-                if(!checkDate(fitnessProgramEntity,part)){
-                    programDTOS.add(modelMapper.map(fitnessProgramEntity, CardFitnessProgramDTO.class));
+            if(!fitnessProgramEntity.getDeleted()) {
+                if (check) {
+                    if (checkDate(fitnessProgramEntity, part)) {
+                        programDTOS.add(modelMapper.map(fitnessProgramEntity, CardFitnessProgramDTO.class));
+                    }
+                } else {
+                    if (!checkDate(fitnessProgramEntity, part)) {
+                        programDTOS.add(modelMapper.map(fitnessProgramEntity, CardFitnessProgramDTO.class));
+                    }
                 }
             }
         });

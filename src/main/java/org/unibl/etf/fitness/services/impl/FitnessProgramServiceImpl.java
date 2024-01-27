@@ -109,7 +109,7 @@ public class FitnessProgramServiceImpl implements FitnessProgramService {
         var jwtUser =(JwtUserDTO)auth.getPrincipal();
         if(!jwtUser.getId().equals(user.getId()))
             throw new UnauthorizedException();
-        return fitnessProgramRepository.findAll().stream()
+        return fitnessProgramRepository.findAll().stream().filter(el->el.getDeleted().equals(false))
                 .map(el->modelMapper.map(el, QuestionFitnessProgramDTO.class)).collect(Collectors.toList());
     }
 }

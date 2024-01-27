@@ -182,12 +182,12 @@ public class PdfServiceImpl implements PdfService {
     @Override
     public PdfDTO downloadPdf(Long id, Authentication auth) throws IOException {
         var user = clientRepository.findById(id).orElseThrow(NotFoundException::new);
-        var jwtUser =(JwtUserDTO)auth.getPrincipal();
-        if(!jwtUser.getId().equals(user.getId()))
-        {
-            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
-            throw new UnauthorizedException();
-        }
+//        var jwtUser =(JwtUserDTO)auth.getPrincipal();
+//        if(!jwtUser.getId().equals(user.getId()))
+//        {
+//            logService.warning("Access to someone else's account attempted! User: " + jwtUser.getUsername() + ".");
+//            throw new UnauthorizedException();
+//        }
         File pdfFile = new File(path + File.separator + "Activities_" + id + ".pdf");
         if(!pdfFile.exists())
             throw new NotFoundException();

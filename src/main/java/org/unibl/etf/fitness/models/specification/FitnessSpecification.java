@@ -22,6 +22,7 @@ public class FitnessSpecification {
                 List<Predicate> predicates = new ArrayList<>();
                 filtersList.forEach(filter ->{
                     Predicate predicate;
+
                     if(filter.getColumnName().equals("name")){
                         predicate = criteriaBuilder.like(root.get("name"), "%" + filter.getColumnValue() + "%");
                     }else if(filter.getColumnName().equals("price")){
@@ -40,6 +41,7 @@ public class FitnessSpecification {
                     }
                     predicates.add(predicate);
                 });
+                predicates.add(criteriaBuilder.equal(root.get("deleted"), false));
                 return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
             }
         };
