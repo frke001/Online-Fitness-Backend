@@ -1,6 +1,6 @@
 # OnlineFitness - Backend Application
 
-This project is a Spring Boot application for the backend of the OnlineFitness system. It follows Spring principles and utilizes various packages such as services, controllers, models (DTO and entities), repositories, exceptions, advisors for global exception handling, and security configuration for Spring Security.
+Central platform for accessing and participating in online fitness programs. Enables users to search, participate, and interact with various programs, as well as track progress and create their own programs. This project is a Spring Boot application for the backend of the OnlineFitness system.
 
 ## Running the Application
 
