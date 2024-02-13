@@ -30,7 +30,4 @@ For more information about Spring Boot and Spring Security, refer to the officia
 
 Ensure that proper security configurations are in place, including authentication, authorization, and protection against common security vulnerabilities such as CSRF (Cross-Site Request Forgery) and XSS (Cross-Site Scripting).
 
-## Future Improvements
-
-Consider implementing additional features such as caching, logging, monitoring, and scalability enhancements to improve the overall performance and reliability of the application.
 
