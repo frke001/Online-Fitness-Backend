@@ -20,10 +20,6 @@ To run the application, you can use your IDE (Integrated Development Environment
 
 To build the project, use Maven or Gradle. For Maven, you can execute the `mvn clean package` command to generate the JAR file. For Gradle, use the `./gradlew build` command.
 
-## Running Tests
-
-Unit tests and integration tests can be executed using your IDE or with Maven/Gradle commands (`mvn test` or `./gradlew test`).
-
 ## Additional Information
 
 For more information about Spring Boot and Spring Security, refer to the official documentation:
